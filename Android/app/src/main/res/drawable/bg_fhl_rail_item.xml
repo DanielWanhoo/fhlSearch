@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 导航项底色：选中＝朱砂淡底圆角块；未选中＝透明（普通 tab 栏的观感） -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/fhl_vermilion_tint" />
+            <corners android:radius="@dimen/fhl_radius_m" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/fhl_transparent" />
+        </shape>
+    </item>
+</selector>

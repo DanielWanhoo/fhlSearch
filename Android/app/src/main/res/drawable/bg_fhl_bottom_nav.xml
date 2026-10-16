@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 底部导航容器：悬浮圆角卡片（仿样例截图） -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/fhl_card" />
+    <corners android:radius="@dimen/fhl_radius_pill" />
+    <stroke android:width="@dimen/fhl_stroke_hair" android:color="@color/fhl_line_strong" />
+</shape>

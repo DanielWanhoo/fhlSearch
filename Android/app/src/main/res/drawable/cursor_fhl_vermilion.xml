@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 字格里那个隐藏输入框的光标：朱砂细竖线，和选中框同色，位置一目了然 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <size android:width="2dp" />
+    <solid android:color="@color/fhl_vermilion" />
+</shape>

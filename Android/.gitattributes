@@ -1,0 +1,21 @@
+# 换行符策略：源码统一 LF；Windows 批处理必须 CRLF
+# （曾经因为 一键重新打包apk.bat 是 LF，双击直接报 "The system cannot find the path specified"，
+#   所以这里显式钉死，免得被编辑器或 git 自动转换搞坏。）
+* text=auto eol=lf
+
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# 二进制文件不做任何转换
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary
+*.ico      binary
+*.jar      binary
+*.apk      binary
+*.xlsx     binary
+*.jks      binary
+*.keystore binary
+*.dex      binary

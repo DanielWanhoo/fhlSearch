@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 间距（dp） -->
+    <dimen name="fhl_gap_xs">4dp</dimen>
+    <dimen name="fhl_gap_s">8dp</dimen>
+    <dimen name="fhl_gap_m">12dp</dimen>
+    <dimen name="fhl_gap_l">16dp</dimen>
+    <dimen name="fhl_gap_xl">24dp</dimen>
+
+    <!-- 圆角（dp） -->
+    <dimen name="fhl_radius_s">8dp</dimen>
+    <dimen name="fhl_radius_m">14dp</dimen>
+    <dimen name="fhl_radius_l">22dp</dimen>
+    <dimen name="fhl_radius_pill">999dp</dimen>
+
+    <!-- 描边（dp） -->
+    <dimen name="fhl_stroke_hair">1dp</dimen>
+    <dimen name="fhl_stroke_thick">1.5dp</dimen>
+    <dimen name="fhl_stroke_focus">2dp</dimen>
+
+    <!-- 字号（sp，随系统字体缩放） -->
+    <dimen name="fhl_fs_title">24sp</dimen>
+    <dimen name="fhl_fs_subtitle">13sp</dimen>
+    <dimen name="fhl_fs_body">16sp</dimen>
+    <dimen name="fhl_fs_body_s">14sp</dimen>
+    <dimen name="fhl_fs_result">17sp</dimen>
+    <dimen name="fhl_fs_cell">24sp</dimen>
+    <dimen name="fhl_fs_btn">16sp</dimen>
+
+    <!-- 控件高度 -->
+    <dimen name="fhl_btn_h">48dp</dimen>
+    <dimen name="fhl_btn_h_large">52dp</dimen>
+    <!-- 结果区底部那排小按键（清空当前检索 / 二次检索 / 清空所有检索）：
+         手机上三个键平分宽度，每个约 120dp，必须保证 6~7 个汉字单行放下，
+         否则文字会折行并被按钮高度裁掉。 -->
+    <dimen name="fhl_btn_h_small">42dp</dimen>
+    <dimen name="fhl_btn_pad_h_small">4dp</dimen>
+    <dimen name="fhl_input_h">48dp</dimen>
+    <dimen name="fhl_row_h">56dp</dimen>
+    <dimen name="fhl_count_h">44dp</dimen>
+
+    <!-- 名士检索：滚轮选择器 -->
+    <dimen name="fhl_wheel_item_h">44dp</dimen>
+    <dimen name="fhl_wheel_h">220dp</dimen>
+
+    <!-- 居中弹窗（滚轮选择 / 名士详情）：窄屏取屏幕宽度的 90%，宽屏最多这么宽 -->
+    <dimen name="fhl_dialog_max_w">440dp</dimen>
+
+    <!-- 屏幕边距 -->
+    <dimen name="fhl_screen_pad">16dp</dimen>
+    <dimen name="fhl_pane_gap">20dp</dimen>
+
+    <!-- 侧边栏（平板） -->
+    <dimen name="fhl_rail_w">132dp</dimen>
+    <dimen name="fhl_rail_item_h">62dp</dimen>
+
+    <!-- 底部导航（手机）：普通通栏 tab 栏 -->
+    <dimen name="fhl_bottom_nav_h">64dp</dimen>
+    <dimen name="fhl_tab_icon">24dp</dimen>
+    <dimen name="fhl_content_max_w">720dp</dimen>
+</resources>

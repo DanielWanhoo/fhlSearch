@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    忘川检索 fhlSearch
+    目标: Windows 7 SP1 及以上，单个绿色免安装 exe
+    框架: .NET Framework 4.0（Win10/11 系统自带 4.8，向下兼容；Win7 需已装 .NET 4.0+）
+  -->
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net40</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <AssemblyName>忘川检索</AssemblyName>
+    <RootNamespace>FhlSearch</RootNamespace>
+    <Product>忘川检索</Product>
+    <AssemblyTitle>忘川检索 fhlSearch</AssemblyTitle>
+    <Company>fhlSearch</Company>
+    <Version>1.1.0</Version>
+    <FileVersion>1.1.0.0</FileVersion>
+    <Copyright>Copyright © 2026</Copyright>
+    <Description>非商业同人工具，仅供个人学习交流。题库来源于微博 @蓝在寻，相关知识内容版权归网易所有。</Description>
+    <NeutralLanguage>zh-CN</NeutralLanguage>
+
+    <!-- 兼容性优先: 不依赖任何 NuGet 运行时包，只用 .NET Framework 自带的程序集 -->
+    <UseWindowsForms>false</UseWindowsForms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Resources\app.ico</ApplicationIcon>
+
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <SatelliteResourceLanguages>zh-Hans</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+
+  <!-- 内嵌题库（由 tools/build_data.py 生成） -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\bank.txt" LogicalName="FhlSearch.bank.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="All" />
+  </ItemGroup>
+
+</Project>

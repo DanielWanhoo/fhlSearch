@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 名士详情里的一行属性：左＝项名（固定宽），右＝值 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:baselineAligned="false"
+    android:orientation="horizontal"
+    android:paddingTop="@dimen/fhl_gap_xs"
+    android:paddingBottom="@dimen/fhl_gap_xs">
+
+    <TextView
+        android:id="@+id/tvAttrLabel"
+        style="@style/TextFhlCaption"
+        android:layout_width="86dp"
+        android:layout_height="wrap_content"
+        android:textColor="@color/fhl_ink_sub"
+        tools:text="品阶" />
+
+    <TextView
+        android:id="@+id/tvAttrValue"
+        style="@style/TextFhlBody"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        tools:text="天" />
+</LinearLayout>

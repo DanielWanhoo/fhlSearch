@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 平板：左侧 tab 栏（与手机底部同一套"普通 tab 栏"样式，去掉白色卡片底，靠右侧分隔线与内容分开）
+     三个 tab 的 layout_weight 都是 1，等于把整栏高度三等分——
+     既"均匀排布在栏中"，每个 tab 的图标+文字又居中在自己的那一格。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/railNav"
+    android:layout_width="@dimen/fhl_rail_w"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingStart="@dimen/fhl_gap_xs"
+    android:paddingEnd="@dimen/fhl_gap_xs"
+    android:paddingTop="@dimen/fhl_gap_s"
+    android:paddingBottom="@dimen/fhl_gap_s" />

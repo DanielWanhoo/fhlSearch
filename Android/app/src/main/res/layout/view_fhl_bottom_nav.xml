@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 手机：底部 tab 栏（通栏普通样式，不再是悬浮白胶囊）；三个 tab 由代码等宽添加 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/bottomNav"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_fhl_tabbar"
+    android:orientation="horizontal"
+    android:paddingStart="@dimen/fhl_gap_xs"
+    android:paddingEnd="@dimen/fhl_gap_xs"
+    android:paddingTop="@dimen/fhl_gap_xs"
+    android:paddingBottom="@dimen/fhl_gap_xs" />

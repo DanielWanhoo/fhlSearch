@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 平板（宽度 ≥600dp）：左侧边栏 + 右侧内容 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_fhl_paper"
+    android:orientation="horizontal">
+
+    <include layout="@layout/view_fhl_rail_nav" />
+
+    <View
+        android:layout_width="@dimen/fhl_stroke_hair"
+        android:layout_height="match_parent"
+        android:background="@color/fhl_line" />
+
+    <FrameLayout
+        android:id="@+id/content"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1" />
+</LinearLayout>

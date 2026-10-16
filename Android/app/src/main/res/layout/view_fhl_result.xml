@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 检索结果区（三个模块共用）：结果标题 + 空态提示 + 结果列表
+     注意：底部那排按钮已抽到 view_fhl_actions.xml，由各页放在图一/图二要求的位置 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- 结果标题「匹配结果 (N)」；二次检索时右侧显示范围提示 -->
+    <LinearLayout
+        android:id="@+id/layStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <TextView
+            android:id="@+id/tvResultCount"
+            style="@style/TextFhlBody"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            tools:text="匹配结果 (25)" />
+
+        <TextView
+            android:id="@+id/tvSecondBar"
+            style="@style/TextFhlCaption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_fhl_tag_hit"
+            android:paddingStart="@dimen/fhl_gap_s"
+            android:paddingEnd="@dimen/fhl_gap_s"
+            android:paddingTop="@dimen/fhl_gap_xs"
+            android:paddingBottom="@dimen/fhl_gap_xs"
+            android:textColor="@color/fhl_green_text"
+            android:visibility="gone"
+            tools:text="二次检索中 · 当前范围：12 条"
+            tools:visibility="visible" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvEmpty"
+        style="@style/TextFhlCaption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_m"
+        android:gravity="center"
+        android:visibility="gone"
+        tools:text="填写检索条件后点「检索」"
+        tools:visibility="visible" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvResult"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="@dimen/fhl_gap_s"
+        android:clipToPadding="false"
+        android:paddingBottom="@dimen/fhl_gap_s"
+        android:scrollbars="vertical" />
+</LinearLayout>

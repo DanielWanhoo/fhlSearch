@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 选项型模式（朝代/爱好/社团/品阶）的选择面板：
+     屏幕正中的圆角卡片，中间是滚轮，底部「确定」生效 /「清除该条件」清空 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_fhl_sheet"
+    android:orientation="vertical"
+    android:padding="@dimen/fhl_gap_l">
+
+    <TextView
+        android:id="@+id/tvSheetTitle"
+        style="@style/TextFhlBody"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/fhl_vermilion"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvSheetHint"
+        style="@style/TextFhlCaption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_xs"
+        android:text="@string/ms_wheel_hint" />
+
+    <com.wangchuan.fhlsearch.widget.WheelPickerView
+        android:id="@+id/wheel"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/fhl_wheel_h"
+        android:layout_marginTop="@dimen/fhl_gap_m" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_m"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnClearMode"
+            style="@style/BtnFhlLight"
+            android:layout_width="0dp"
+            android:layout_height="46dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="@dimen/fhl_gap_s"
+            android:maxLines="1"
+            android:paddingLeft="@dimen/fhl_btn_pad_h_small"
+            android:paddingRight="@dimen/fhl_btn_pad_h_small"
+            android:text="@string/ms_wheel_clear"
+            android:textSize="@dimen/fhl_fs_body_s"
+            app:autoSizeMaxTextSize="@dimen/fhl_fs_body_s"
+            app:autoSizeMinTextSize="9sp"
+            app:autoSizeStepGranularity="1sp"
+            app:autoSizeTextType="uniform" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnWheelConfirm"
+            style="@style/BtnFhlPrimary"
+            android:layout_width="0dp"
+            android:layout_height="46dp"
+            android:layout_weight="1"
+            android:maxLines="1"
+            android:text="@string/ms_wheel_confirm" />
+    </LinearLayout>
+</LinearLayout>

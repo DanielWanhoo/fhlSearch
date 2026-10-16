@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 竖排朱红小竖条：用于大标题前的装饰（中国风） -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/fhl_vermilion" />
+    <corners android:radius="2dp" />
+    <size android:width="4dp" />
+</shape>

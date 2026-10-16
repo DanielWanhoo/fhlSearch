@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 成语结果卡片（图一样式）：白色圆角卡；选中时左侧多一条朱砂竖线 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true">
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/fhl_card" />
+                    <corners android:radius="@dimen/fhl_radius_m" />
+                    <stroke
+                        android:width="@dimen/fhl_stroke_hair"
+                        android:color="@color/fhl_vermilion_light" />
+                </shape>
+            </item>
+            <item
+                android:width="4dp"
+                android:gravity="start|center_vertical">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/fhl_vermilion" />
+                    <corners android:radius="2dp" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/fhl_card" />
+            <corners android:radius="@dimen/fhl_radius_m" />
+            <stroke
+                android:width="@dimen/fhl_stroke_hair"
+                android:color="@color/fhl_line" />
+        </shape>
+    </item>
+</selector>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 单个模块页的顶部标题区：大标题 + 右上角检索次数 + 副标题
+     注意：这里刻意不用 <merge> 作根——<merge> 布局被 include 时不会把 id 传给子控件，
+     运行时会因找不到 id（Missing required view with ID）而崩溃。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/header"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingTop="@dimen/fhl_gap_l"
+        android:paddingBottom="@dimen/fhl_gap_xs">
+
+        <View
+            android:layout_width="4dp"
+            android:layout_height="26dp"
+            android:background="@drawable/bg_fhl_title_bar" />
+
+        <TextView
+            android:id="@+id/tvTitle"
+            style="@style/TextFhlTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/fhl_gap_s"
+            android:layout_weight="1"
+            tools:text="山石雅集第 14 题" />
+
+        <TextView
+            android:id="@+id/tvCount"
+            style="@style/TextFhlCaption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="检索 0 次" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvSubtitle"
+        style="@style/TextFhlSubtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/fhl_gap_xs"
+        tools:text="按拼音 / 声调 / 单字检索成语" />
+</LinearLayout>

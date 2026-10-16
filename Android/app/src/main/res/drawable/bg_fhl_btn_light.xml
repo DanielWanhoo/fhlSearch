@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 浅色按钮底：宣纸面 + 描金细边 -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/fhl_gold_tint">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/fhl_btn_light" />
+            <corners android:radius="@dimen/fhl_radius_pill" />
+            <stroke android:width="@dimen/fhl_stroke_hair" android:color="@color/fhl_line_strong" />
+        </shape>
+    </item>
+</ripple>

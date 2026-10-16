@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 名士结果卡片（图二样式）：左边名士名，右边（朝代）靠右对齐 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/fhl_gap_s"
+    android:background="@drawable/bg_fhl_result_row"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:minHeight="@dimen/fhl_row_h"
+    android:orientation="horizontal"
+    android:paddingStart="@dimen/fhl_gap_m"
+    android:paddingEnd="@dimen/fhl_gap_m"
+    android:paddingTop="@dimen/fhl_gap_s"
+    android:paddingBottom="@dimen/fhl_gap_s">
+
+    <TextView
+        android:id="@+id/tvMsName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textColor="@color/fhl_ink"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        tools:text="韩非" />
+
+    <TextView
+        android:id="@+id/tvMsDynasty"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/fhl_gap_s"
+        android:textColor="@color/fhl_ink_sub"
+        android:textSize="@dimen/fhl_fs_body_s"
+        tools:text="（先秦）" />
+</LinearLayout>

@@ -1,0 +1,16 @@
+# 默认按文本处理，仓库里统一用 LF
+* text=auto eol=lf
+
+# 下面这些对编码 / 换行敏感，git 不要做任何转换
+#   .bat  必须是 GBK，cmd.exe 按系统代码页读
+#   .ps1  必须是 UTF-8 with BOM，Windows PowerShell 5.1 无 BOM 时按 GBK 解码
+#   .txt  给用户看的说明必须是 UTF-8 with BOM + CRLF（Win7 记事本）
+*.bat   -text
+*.ps1   -text
+*.txt   -text
+
+# 二进制
+*.ico   binary
+*.png   binary
+*.xlsx  binary
+*.exe   binary

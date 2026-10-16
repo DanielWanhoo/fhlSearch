@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 成语检索（平板双栏）：左＝检索条件，右＝检索结果 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:paddingStart="@dimen/fhl_screen_pad"
+    android:paddingEnd="@dimen/fhl_screen_pad"
+    android:paddingTop="@dimen/fhl_gap_s"
+    android:paddingBottom="@dimen/fhl_gap_s">
+
+    <!-- 左栏：条件 -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="42"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <include
+                android:id="@+id/header"
+                layout="@layout/view_fhl_header" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_fhl_card"
+                android:orientation="vertical"
+                android:padding="@dimen/fhl_gap_m">
+
+                <com.google.android.material.tabs.TabLayout
+                    android:id="@+id/tabMode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_fhl_card_soft"
+                    app:tabGravity="fill"
+                    app:tabIndicatorColor="@color/fhl_vermilion"
+                    app:tabIndicatorFullWidth="false"
+                    app:tabIndicatorHeight="3dp"
+                    app:tabMode="fixed"
+                    app:tabRippleColor="@color/fhl_gold_tint"
+                    app:tabSelectedTextColor="@color/fhl_vermilion"
+                    app:tabTextColor="@color/fhl_ink_sub" />
+
+                <LinearLayout
+                    android:id="@+id/layInputs"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/fhl_gap_m"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal" />
+            </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSearch"
+                style="@style/BtnFhlPrimary"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/fhl_btn_h_large"
+                android:layout_marginTop="@dimen/fhl_gap_m"
+                android:text="@string/cy_search" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <View
+        android:layout_width="@dimen/fhl_stroke_hair"
+        android:layout_height="match_parent"
+        android:layout_marginStart="@dimen/fhl_pane_gap"
+        android:layout_marginEnd="@dimen/fhl_pane_gap"
+        android:background="@color/fhl_line" />
+
+    <!-- 右栏：结果（按钮行在结果标题上方） -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="58"
+        android:orientation="vertical">
+
+        <include
+            android:id="@+id/actions"
+            layout="@layout/view_fhl_actions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/fhl_gap_s" />
+
+        <include
+            android:id="@+id/result"
+            layout="@layout/view_fhl_result"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+    </LinearLayout>
+</LinearLayout>

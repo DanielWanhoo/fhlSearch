@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 命中字格：绿框标亮（需求：绿色方框分别标亮这些汉字） -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/fhl_green_bg" />
+            <corners android:radius="@dimen/fhl_radius_s" />
+            <stroke android:width="@dimen/fhl_stroke_focus" android:color="@color/fhl_green_line" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/fhl_green_bg" />
+            <corners android:radius="@dimen/fhl_radius_s" />
+            <stroke android:width="@dimen/fhl_stroke_hair" android:color="@color/fhl_green_line" />
+        </shape>
+    </item>
+</selector>

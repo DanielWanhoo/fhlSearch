@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 全部界面文案集中于此，与《界面文案与配色规范.md》一一对应 -->
+<resources>
+
+    <string name="app_name">忘川检索</string>
+    <string name="app_internal_title">忘川检索 · fhlSearch</string>
+
+    <!-- 导航 -->
+    <string name="nav_chengyu">成语检索</string>
+    <string name="nav_shici">诗词检索</string>
+    <string name="nav_mingshi">名士检索</string>
+
+    <!-- 通用 -->
+    <string name="count_times">检索 %1$d 次</string>
+    <string name="empty_chengyu">填写检索条件后点「检索」</string>
+    <string name="empty_shici">在表格中填入汉字后点「开始检索」</string>
+    <string name="empty_mingshi">选择或输入检索条件后，结果将显示在这里；\n点结果中的任意一行，可查看该名士的全部描述</string>
+    <string name="tip_illegal_char">非法字符</string>
+    <string name="tip_need_condition">请至少填写一个条件</string>
+    <string name="tip_tiku_error">题库数据读取失败，请重新安装应用</string>
+    <string name="copy_done">已复制</string>
+
+    <!-- 成语检索（山石雅集第 14 题） -->
+    <string name="cy_title">山石雅集第 14 题</string>
+    <string name="cy_subtitle">按拼音 / 声调 / 单字检索成语</string>
+    <string name="cy_mode_pinyin">拼音</string>
+    <string name="cy_mode_tone">声调</string>
+    <string name="cy_mode_char">单字</string>
+    <string name="cy_hint_pinyin">拼音</string>
+    <string name="cy_hint_tone">声调</string>
+    <string name="cy_hint_char">单字</string>
+    <string name="cy_search">检索</string>
+    <string name="cy_result_count">匹配结果 (%1$d)</string>
+    <string name="cy_tone_prefix">声调：</string>
+    <string name="cy_no_result">未检索到对应结果</string>
+    <string name="cy_second_search_bar">在上一次 %1$d 条结果中筛出</string>
+    <string name="cy_second_search">二次检索</string>
+
+    <!-- 诗词检索（山石雅集第 15 题） -->
+    <string name="sc_title">山石雅集第 15 题</string>
+    <string name="sc_subtitle">在表格中填入汉字，检索蕴含的诗句</string>
+    <string name="sc_clear">清空</string>
+    <string name="sc_search">开始检索</string>
+    <string name="sc_result_count">匹配结果 (%1$d)</string>
+    <string name="sc_no_result">未找到可组成的诗句</string>
+    <string name="sc_result_line">%1$s · %2$s · %3$s</string>
+    <string name="sc_order_hint">序号 ①②③④⑤ 表示该字取自哪一格</string>
+
+    <!-- 名士检索（众里寻他） -->
+    <string name="ms_title">众里寻他</string>
+    <string name="ms_subtitle">选择或输入条件检索名士，可多次叠加</string>
+    <string name="ms_mode_dynasty">朝代</string>
+    <string name="ms_mode_love">爱好</string>
+    <string name="ms_mode_club">社团</string>
+    <string name="ms_mode_rank">品阶</string>
+    <string name="ms_mode_job">职业</string>
+    <string name="ms_mode_born">生逢（生于…）</string>
+    <string name="ms_mode_origin">出身/身世</string>
+    <string name="ms_mode_skill">技能</string>
+    <string name="ms_mode_other">其他描述</string>
+    <string name="ms_pick">选择</string>
+    <string name="ms_input">输入</string>
+    <string name="ms_search">检索</string>
+    <string name="ms_no_result">未检索到该名士</string>
+    <string name="ms_result_count">匹配结果 (%1$d)</string>
+    <string name="ms_second_search_bar">在上一次 %1$d 位名士中筛出</string>
+    <string name="ms_second_search">二次检索</string>
+    <string name="ms_back_one_level">清空当前</string>
+    <string name="ms_input_hint">在此输入检索内容</string>
+    <string name="ms_applied_prefix">已检索：</string>
+    <string name="ms_need_new_condition">请先选择或输入新的条件，再点「二次检索」</string>
+    <string name="ms_dynasty_suffix">（%1$s）</string>
+
+    <!-- 名士检索：选项型条件（朝代/爱好/社团/品阶）的滚轮选择面板 -->
+    <string name="ms_wheel_hint">上下滑动滚轮选择（也可直接点某一项），点「确定」生效</string>
+    <string name="ms_wheel_confirm">确定</string>
+    <string name="ms_wheel_clear">清除该条件</string>
+
+    <!-- 名士检索：点击结果后展示该名士的全部信息 -->
+    <string name="ms_detail_title">名士详情</string>
+    <string name="ms_label_with_dynasty">%1$s（%2$s）</string>
+    <string name="ms_detail_rank">品阶</string>
+    <string name="ms_detail_job">职业</string>
+    <string name="ms_detail_born">生逢</string>
+    <string name="ms_detail_origin">出身/身世</string>
+    <string name="ms_detail_skill">技能</string>
+    <string name="ms_detail_love">爱好</string>
+    <string name="ms_detail_club">社团</string>
+    <string name="ms_detail_desc">相关描述（共 %1$d 条）</string>
+    <string name="ms_detail_empty">题库中该名士暂无此项</string>
+    <string name="ms_detail_close">关闭</string>
+    <string name="ms_detail_hint">点结果中的任意一行即可展开该名士的全部描述</string>
+
+    <!-- 三个模块共用的结果区按钮 -->
+    <string name="btn_clear_all">清空所有</string>
+    <string name="btn_clear_current">清空当前</string>
+
+</resources>

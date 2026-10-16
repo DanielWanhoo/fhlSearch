@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 底部 tab 栏（普通通栏样式）
+     底色透明 —— 直接露出窗口的宣纸渐变底（bg_fhl_paper），
+     这样 tab 栏与页面背景是同一块颜色，看不出分界；
+     只留顶部一条细分隔线做视觉区分。 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/fhl_transparent" />
+        </shape>
+    </item>
+    <item
+        android:height="@dimen/fhl_stroke_hair"
+        android:gravity="top">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/fhl_line" />
+        </shape>
+    </item>
+</layer-list>

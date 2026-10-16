@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 结果行：宣纸卡片；点中态用朱砂淡底 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/fhl_vermilion_tint" />
+            <corners android:radius="@dimen/fhl_radius_s" />
+            <stroke android:width="@dimen/fhl_stroke_hair" android:color="@color/fhl_vermilion_light" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/fhl_card_soft" />
+            <corners android:radius="@dimen/fhl_radius_s" />
+            <stroke android:width="@dimen/fhl_stroke_hair" android:color="@color/fhl_line" />
+        </shape>
+    </item>
+</selector>

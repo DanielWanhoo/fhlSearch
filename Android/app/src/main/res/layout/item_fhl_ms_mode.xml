@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 名士检索的一个条件行：左＝模式名，右＝当前选中值 / 选择·输入提示 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/fhl_row_h"
+    android:layout_marginBottom="@dimen/fhl_gap_s"
+    android:background="@drawable/bg_fhl_row"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="@dimen/fhl_gap_l"
+    android:paddingEnd="@dimen/fhl_gap_m">
+
+    <TextView
+        android:id="@+id/tvModeName"
+        style="@style/TextFhlBody"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        tools:text="朝代" />
+
+    <TextView
+        android:id="@+id/tvModeState"
+        style="@style/TextFhlCaption"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxWidth="200dp"
+        android:singleLine="true"
+        android:textColor="@color/fhl_ink_hint"
+        tools:text="选择" />
+
+    <TextView
+        android:id="@+id/tvArrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/fhl_gap_xs"
+        android:text="⌄"
+        android:textColor="@color/fhl_ink_hint"
+        android:textSize="16sp" />
+</LinearLayout>

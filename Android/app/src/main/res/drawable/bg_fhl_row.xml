@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 名士检索的条件行：宣纸卡片 + 描金细边，按下时泛金光 -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/fhl_gold_tint">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/fhl_card" />
+            <corners android:radius="@dimen/fhl_radius_m" />
+            <stroke android:width="@dimen/fhl_stroke_hair" android:color="@color/fhl_line_strong" />
+        </shape>
+    </item>
+</ripple>

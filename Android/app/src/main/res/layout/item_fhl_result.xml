@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 单行结果（诗词模块用，也作为兜底版式）：一行文字，可复制 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="6dp"
+    android:background="@drawable/bg_fhl_result_row"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:minHeight="42dp"
+    android:orientation="horizontal"
+    android:paddingStart="@dimen/fhl_gap_m"
+    android:paddingEnd="@dimen/fhl_gap_m"
+    android:paddingTop="@dimen/fhl_gap_s"
+    android:paddingBottom="@dimen/fhl_gap_s">
+
+    <TextView
+        android:id="@+id/tvText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:lineSpacingExtra="3dp"
+        android:textColor="@color/fhl_ink"
+        android:textSize="@dimen/fhl_fs_result"
+        tools:text="离离原上草 · 《赋得古原草送别》 · 白居易" />
+</LinearLayout>

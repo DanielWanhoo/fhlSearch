@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 弹窗卡片的底：四角圆角宣纸面 + 细描金边
+     （v1.3 起两个面板都改成"屏幕居中的卡片"，所以下面两个角也必须圆，
+       之前只圆上面两个角是"底部弹出面板"时代的写法） -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/fhl_card" />
+    <corners android:radius="@dimen/fhl_radius_l" />
+    <stroke
+        android:width="@dimen/fhl_stroke_hair"
+        android:color="@color/fhl_line_strong" />
+</shape>

@@ -1,0 +1,41 @@
+# ────────────────────────────────────────────────────────────────
+# 忘川检索 · Android 版 · 版本库忽略清单
+#
+# 原则：只把"源码 / 资源 / 题库 / 文档 / 脚本"纳入版本管理；
+#       能重新生成的产物、本机配置、以及签名密钥都排除在外。
+# ────────────────────────────────────────────────────────────────
+
+# ---- 构建产物（双击 一键重新打包apk.bat 即可重新生成）----
+app/build/
+build/
+.gradle/
+.kotlin/
+captures/
+
+# ---- 本机配置（Android Studio / 命令行各自生成）----
+local.properties
+.idea/
+*.iml
+
+# ---- 签名密钥：绝不入库 ----
+keystore/
+keystore.properties
+*.jks
+*.keystore
+
+# ---- 开发临时目录（脚本的中间输出、自动化截图）----
+_analysis/
+docs/shots/
+.tools/
+_spike/
+
+# ---- Python 运行缓存 ----
+__pycache__/
+*.pyc
+
+# ---- 杂项 ----
+*.log
+*.tmp
+Thumbs.db
+desktop.ini
+.DS_Store

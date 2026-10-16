@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 中国风配色：色值取自《界面文案与配色规范.md》，改色只需改本文件 -->
+<resources>
+
+    <!-- 宣纸底色（竖向渐变的起止色） -->
+    <color name="fhl_paper_top">#F7F1E3</color>
+    <color name="fhl_paper_bottom">#EFE4CE</color>
+
+    <!-- 卡片 / 输入框 / 按钮填充 -->
+    <color name="fhl_card">#FBF7EC</color>          <!-- 卡片、面板 -->
+    <color name="fhl_card_soft">#FDFBF5</color>     <!-- 更亮的面（字格、选项卡容器） -->
+    <color name="fhl_btn_light">#FFFDF7</color>     <!-- 浅色按钮 -->
+
+    <!-- 朱砂 -->
+    <color name="fhl_vermilion">#9E2B25</color>     <!-- 主色 -->
+    <color name="fhl_vermilion_light">#C0392B</color> <!-- 高亮 / 选中红框 -->
+    <color name="fhl_vermilion_pressed">#7E211C</color>
+    <color name="fhl_vermilion_tint">#F3E3DF</color> <!-- 朱砂淡底（选中选项卡底） -->
+
+    <!-- 描金 -->
+    <color name="fhl_gold">#B08A3E</color>
+    <color name="fhl_gold_light">#D8C48E</color>
+    <color name="fhl_gold_tint">#F1E8D2</color>
+
+    <!-- 墨色与文字 -->
+    <color name="fhl_ink">#2B2118</color>           <!-- 正文 -->
+    <color name="fhl_ink_sub">#6B5B4B</color>       <!-- 次级文字 -->
+    <color name="fhl_ink_hint">#9C8B76</color>      <!-- 占位/提示 -->
+    <color name="fhl_text_on_dark">#FBF3E4</color>  <!-- 朱砂底上的文字 -->
+
+    <!-- 青竹 -->
+    <color name="fhl_bamboo">#3F6B4A</color>
+
+    <!-- 命中绿（结果标注） -->
+    <color name="fhl_green_bg">#D6EBD4</color>
+    <color name="fhl_green_text">#1F6B2C</color>
+    <color name="fhl_green_line">#4E9A5B</color>
+
+    <!-- 结构线 -->
+    <color name="fhl_line">#E3D9C2</color>
+    <color name="fhl_line_strong">#CDBE9F</color>
+
+    <!-- 状态 -->
+    <color name="fhl_error">#C0392B</color>
+    <color name="fhl_disabled">#BCAE97</color>
+
+    <!-- 输入框填充 -->
+    <color name="fhl_input_fill">#F5EEDC</color>
+
+    <!-- 语义别名：选项卡文字的状态色（真实定义在 res/color/fhl_chip_text.xml） -->
+    <color name="fhl_chip_text">@color/fhl_chip_text_state</color>
+
+    <color name="fhl_transparent">#00000000</color>
+
+</resources>

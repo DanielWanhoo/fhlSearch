@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 诗词检索（手机单栏）：字格与按键（可滚动）+ 命中诗句结果（填充剩余空间） -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingStart="@dimen/fhl_screen_pad"
+    android:paddingEnd="@dimen/fhl_screen_pad">
+
+    <!-- 与成语页同理：条件区（标题 + 30 字格 + 清空/开始检索）按内容高度收缩，
+         剩余空间全部留给结果区，避免中间出现空白。 -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fillViewport="false">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <include
+                android:id="@+id/header"
+                layout="@layout/view_fhl_header" />
+
+            <include
+                android:id="@+id/cond"
+                layout="@layout/view_fhl_shici_cond" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="@dimen/fhl_gap_m"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <include
+            android:id="@+id/actions"
+            layout="@layout/view_fhl_actions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/fhl_gap_s" />
+
+        <include
+            android:id="@+id/result"
+            layout="@layout/view_fhl_result"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+    </LinearLayout>
+</LinearLayout>

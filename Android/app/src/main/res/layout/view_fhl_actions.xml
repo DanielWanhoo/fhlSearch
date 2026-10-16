@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 结果区按钮行（按图一顺序）：清空所有 / 清空当前 / 二次检索
+     三个键等宽平分；手机上一键约 120dp，所以用 BtnFhlLightSmall（单行 + 字号自适应）。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/layActions"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:baselineAligned="false"
+    android:orientation="horizontal"
+    android:visibility="gone">
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnClearAll"
+        style="@style/BtnFhlLightSmall"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/fhl_btn_h_small"
+        android:layout_weight="1"
+        android:layout_marginEnd="@dimen/fhl_gap_s"
+        android:text="@string/btn_clear_all" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnClearCurrent"
+        style="@style/BtnFhlLightSmall"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/fhl_btn_h_small"
+        android:layout_weight="1"
+        android:layout_marginEnd="@dimen/fhl_gap_s"
+        android:text="@string/btn_clear_current" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnSecondSearch"
+        style="@style/BtnFhlPrimary"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/fhl_btn_h_small"
+        android:layout_weight="1"
+        android:maxLines="1"
+        android:text="@string/cy_second_search"
+        android:textSize="@dimen/fhl_fs_body_s"
+        app:autoSizeMaxTextSize="@dimen/fhl_fs_body_s"
+        app:autoSizeMinTextSize="6sp"
+        app:autoSizeStepGranularity="1sp"
+        app:autoSizeTextType="uniform" />
+</LinearLayout>

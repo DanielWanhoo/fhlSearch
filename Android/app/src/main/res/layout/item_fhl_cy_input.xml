@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 成语检索的一个输入格（四个之一），对应成语的第 N 个字。
+     用 XML 声明而不是代码里 new TextInputLayout：样式的 boxBackgroundColor / boxStrokeColor 等
+     属性只有在布局解析阶段才会被 Material 组件读取。 -->
+<com.google.android.material.textfield.TextInputLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="@style/InputFhl"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:hint="@string/cy_hint_pinyin"
+    app:boxBackgroundMode="outline">
+
+    <com.google.android.material.textfield.TextInputEditText
+        android:id="@+id/etCell"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:imeOptions="actionSearch"
+        android:inputType="text"
+        android:maxLines="1"
+        android:paddingTop="@dimen/fhl_gap_m"
+        android:paddingBottom="@dimen/fhl_gap_m"
+        android:textSize="@dimen/fhl_fs_body" />
+</com.google.android.material.textfield.TextInputLayout>

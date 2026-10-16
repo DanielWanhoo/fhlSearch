@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 应用主题：中国风（宣纸底 + 朱砂主色 + 描金线） -->
+    <style name="Theme.FhlSearch" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/fhl_vermilion</item>
+        <item name="colorOnPrimary">@color/fhl_text_on_dark</item>
+        <item name="colorPrimaryContainer">@color/fhl_vermilion_tint</item>
+        <item name="colorOnPrimaryContainer">@color/fhl_vermilion</item>
+        <item name="colorSecondary">@color/fhl_gold</item>
+        <item name="colorOnSecondary">@color/fhl_ink</item>
+        <item name="colorSurface">@color/fhl_card</item>
+        <item name="colorOnSurface">@color/fhl_ink</item>
+        <item name="colorOnSurfaceVariant">@color/fhl_ink_sub</item>
+        <item name="colorOutline">@color/fhl_line_strong</item>
+        <item name="colorOutlineVariant">@color/fhl_line</item>
+        <item name="colorError">@color/fhl_error</item>
+        <item name="android:colorBackground">@color/fhl_paper_top</item>
+        <item name="android:textColorPrimary">@color/fhl_ink</item>
+        <item name="android:textColorSecondary">@color/fhl_ink_sub</item>
+        <item name="android:windowBackground">@drawable/bg_fhl_paper</item>
+        <item name="android:statusBarColor">@color/fhl_paper_top</item>
+        <item name="android:navigationBarColor">@color/fhl_paper_bottom</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.FhlSearch.Dialog</item>
+    </style>
+
+    <style name="ThemeOverlay.FhlSearch.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorSurface">@color/fhl_card</item>
+        <item name="colorOnSurface">@color/fhl_ink</item>
+        <item name="colorPrimary">@color/fhl_vermilion</item>
+    </style>
+
+    <!-- 屏幕居中弹窗的主题（滚轮选择 / 名士详情）：
+         窗口背景透明，圆角卡片由布局自己的 bg_fhl_sheet 提供；
+         把 Dialog 默认的最小宽度压到 0，好在代码里按屏幕宽度自由设定。 -->
+    <style name="ThemeFhlSearchDialog" parent="Theme.Material3.Light.Dialog.Alert">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowMinWidthMajor">0%</item>
+        <item name="android:windowMinWidthMinor">0%</item>
+        <item name="android:backgroundDimAmount">0.42</item>
+        <item name="colorPrimary">@color/fhl_vermilion</item>
+        <item name="colorSurface">@color/fhl_card</item>
+        <item name="colorOnSurface">@color/fhl_ink</item>
+    </style>
+
+    <!-- 文字样式。
+         注意：样式名刻意不带点（TextFhlTitle 而非 Text.Fhl.Title）——AAPT 遇到带点的样式名时
+         会把第一个点之前的部分当成隐式父样式（Text.Fhl.Title → 去找 Text.Fhl），导致链接失败。 -->
+    <style name="TextFhlTitle">
+        <item name="android:textSize">@dimen/fhl_fs_title</item>
+        <item name="android:textColor">@color/fhl_ink</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextFhlSubtitle">
+        <item name="android:textSize">@dimen/fhl_fs_subtitle</item>
+        <item name="android:textColor">@color/fhl_ink_sub</item>
+    </style>
+
+    <style name="TextFhlBody">
+        <item name="android:textSize">@dimen/fhl_fs_body</item>
+        <item name="android:textColor">@color/fhl_ink</item>
+    </style>
+
+    <style name="TextFhlCaption">
+        <item name="android:textSize">@dimen/fhl_fs_body_s</item>
+        <item name="android:textColor">@color/fhl_ink_sub</item>
+    </style>
+
+    <!-- 朱砂主按钮（木牌/印章感） -->
+    <style name="BtnFhlPrimary" parent="Widget.Material3.Button">
+        <item name="android:layout_height">46dp</item>
+        <item name="android:textSize">@dimen/fhl_fs_btn</item>
+        <item name="android:textColor">@color/fhl_text_on_dark</item>
+        <item name="android:background">@drawable/bg_fhl_btn_primary</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:letterSpacing">0.08</item>
+    </style>
+
+    <!-- 浅色按钮 -->
+    <style name="BtnFhlLight" parent="Widget.Material3.Button">
+        <item name="android:layout_height">46dp</item>
+        <item name="android:textSize">@dimen/fhl_fs_btn</item>
+        <item name="android:textColor">@color/fhl_ink</item>
+        <item name="android:background">@drawable/bg_fhl_btn_light</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:letterSpacing">0.08</item>
+    </style>
+
+    <!-- 小号浅色按钮（结果区的清空类按键） -->
+    <style name="BtnFhlLightSmall" parent="BtnFhlLight">
+        <item name="android:layout_height">@dimen/fhl_btn_h_small</item>
+        <item name="android:textSize">@dimen/fhl_fs_body_s</item>
+        <!-- 结果区一排三个键、手机上一键只有约 120dp 宽：
+             收紧左右内边距 + 只许单行 + 字号自适应，三者合起来保证
+             「清空当前检索」这类 6~7 字文案不会折行、也不会被 42dp 高度裁掉。 -->
+        <item name="android:paddingLeft">@dimen/fhl_btn_pad_h_small</item>
+        <item name="android:paddingRight">@dimen/fhl_btn_pad_h_small</item>
+        <item name="android:paddingStart">@dimen/fhl_btn_pad_h_small</item>
+        <item name="android:paddingEnd">@dimen/fhl_btn_pad_h_small</item>
+        <item name="android:insetLeft">0dp</item>
+        <item name="android:insetRight">0dp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:gravity">center</item>
+        <!-- 字号自适应下限取 6sp：系统字体调到 2 倍时，6sp 的实际观感约等于 12sp，
+             仍清楚可读，但能保证「清空当前检索」整串显示完，不会被按钮宽度截断。 -->
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">6sp</item>
+        <item name="autoSizeMaxTextSize">@dimen/fhl_fs_body_s</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+    </style>
+
+    <!-- 选项选项卡（朝代/爱好/社团/品阶、成语模式） -->
+    <style name="ChipFhl" parent="Widget.Material3.Chip.Filter">
+        <item name="android:textSize">@dimen/fhl_fs_body_s</item>
+        <item name="android:textColor">@color/fhl_chip_text</item>
+        <item name="chipBackgroundColor">@color/fhl_chip_bg</item>
+        <item name="chipStrokeColor">@color/fhl_chip_stroke</item>
+        <item name="chipStrokeWidth">@dimen/fhl_stroke_hair</item>
+        <item name="chipCornerRadius">@dimen/fhl_radius_pill</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="chipIconVisible">false</item>
+        <item name="checkedIconVisible">false</item>
+        <item name="ensureMinTouchTargetSize">false</item>
+        <item name="android:checkable">true</item>
+    </style>
+
+    <!-- 输入框（宣纸内凹质感） -->
+    <style name="InputFhl" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxBackgroundColor">@color/fhl_input_fill</item>
+        <item name="boxStrokeColor">@color/fhl_input_stroke</item>
+        <item name="boxStrokeWidth">@dimen/fhl_stroke_hair</item>
+        <item name="boxStrokeWidthFocused">@dimen/fhl_stroke_focus</item>
+        <item name="boxCornerRadiusTopStart">@dimen/fhl_radius_m</item>
+        <item name="boxCornerRadiusTopEnd">@dimen/fhl_radius_m</item>
+        <item name="boxCornerRadiusBottomStart">@dimen/fhl_radius_m</item>
+        <item name="boxCornerRadiusBottomEnd">@dimen/fhl_radius_m</item>
+        <item name="hintTextColor">@color/fhl_ink_hint</item>
+        <item name="android:textColorHint">@color/fhl_ink_hint</item>
+        <item name="errorIconDrawable">@null</item>
+        <item name="errorTextColor">@color/fhl_error</item>
+        <item name="counterTextColor">@color/fhl_ink_hint</item>
+    </style>
+
+    <!-- 名士检索的条件行样式直接写在 item_fhl_ms_mode.xml 中（不需要单独 style） -->
+
+</resources>

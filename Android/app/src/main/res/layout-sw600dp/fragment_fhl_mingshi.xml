@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 名士检索（平板双栏）：左＝header + 已检索 + 可滚动条件 + 常驻检索键，右＝结果 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:paddingStart="@dimen/fhl_screen_pad"
+    android:paddingEnd="@dimen/fhl_screen_pad"
+    android:paddingTop="@dimen/fhl_gap_s"
+    android:paddingBottom="@dimen/fhl_gap_s">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="44"
+        android:orientation="vertical">
+
+        <include
+            android:id="@+id/header"
+            layout="@layout/view_fhl_header" />
+
+        <TextView
+            android:id="@+id/tvApplied"
+            style="@style/TextFhlCaption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/fhl_gap_xs"
+            android:textColor="@color/fhl_ink_sub"
+            android:visibility="gone"
+            tools:text="已检索：朝代：先秦"
+            tools:visibility="visible" />
+
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true">
+
+            <include
+                android:id="@+id/modes"
+                layout="@layout/view_fhl_ms_modes" />
+        </androidx.core.widget.NestedScrollView>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSearch"
+            style="@style/BtnFhlPrimary"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/fhl_btn_h_large"
+            android:layout_marginTop="@dimen/fhl_gap_s"
+            android:text="@string/ms_search" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="@dimen/fhl_stroke_hair"
+        android:layout_height="match_parent"
+        android:layout_marginStart="@dimen/fhl_pane_gap"
+        android:layout_marginEnd="@dimen/fhl_pane_gap"
+        android:background="@color/fhl_line" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="56"
+        android:orientation="vertical">
+
+        <include
+            android:id="@+id/actions"
+            layout="@layout/view_fhl_actions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/fhl_gap_s" />
+
+        <include
+            android:id="@+id/result"
+            layout="@layout/view_fhl_result"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+    </LinearLayout>
+</LinearLayout>

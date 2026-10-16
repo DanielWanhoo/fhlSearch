@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 名士详情面板：点检索结果里的任意一行后从底部弹出，展示该名士的全部信息与描述 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cardRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_fhl_sheet"
+    android:orientation="vertical"
+    android:padding="@dimen/fhl_gap_l">
+
+    <TextView
+        android:id="@+id/tvDetailCaption"
+        style="@style/TextFhlCaption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/ms_detail_title" />
+
+    <TextView
+        android:id="@+id/tvDetailName"
+        style="@style/TextFhlTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_xs"
+        tools:text="嬴政（秦）" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/fhl_stroke_hair"
+        android:layout_marginTop="@dimen/fhl_gap_m"
+        android:background="@color/fhl_line" />
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollDetail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:id="@+id/layAttrs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/fhl_gap_s"
+                android:orientation="vertical" />
+
+            <TextView
+                android:id="@+id/tvDescHeader"
+                style="@style/TextFhlBody"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/fhl_gap_m"
+                android:textColor="@color/fhl_vermilion"
+                android:textStyle="bold"
+                tools:text="相关描述（共 12 条）" />
+
+            <TextView
+                android:id="@+id/tvDescBody"
+                style="@style/TextFhlBody"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/fhl_gap_s"
+                android:lineSpacingExtra="6dp"
+                tools:text="· 求仙问道&#10;· 喜欢黑色" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnDetailClose"
+        style="@style/BtnFhlPrimary"
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:layout_marginTop="@dimen/fhl_gap_m"
+        android:text="@string/ms_detail_close" />
+</LinearLayout>

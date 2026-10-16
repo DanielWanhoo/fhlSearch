@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 滚轮里的一行选项：高度固定，文字居中；选中态由代码改颜色与字重 -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/tvWheelItem"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/fhl_wheel_item_h"
+    android:gravity="center"
+    android:singleLine="true"
+    android:textColor="@color/fhl_ink"
+    android:textSize="@dimen/fhl_fs_body"
+    tools:text="唐" />

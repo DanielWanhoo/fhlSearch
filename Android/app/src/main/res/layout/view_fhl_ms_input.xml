@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 输入型模式（职业/生逢/出身/技能/其他描述）的输入面板：屏幕正中的圆角卡片 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_fhl_sheet"
+    android:orientation="vertical"
+    android:padding="@dimen/fhl_gap_l">
+
+    <TextView
+        android:id="@+id/tvSheetTitle"
+        style="@style/TextFhlBody"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/fhl_vermilion"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvSheetHint"
+        style="@style/TextFhlCaption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_xs"
+        android:text="模糊检索：不用输入完整内容，标点与空格会被忽略" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilInput"
+        style="@style/InputFhl"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_m"
+        android:hint="@string/ms_input_hint">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:maxLines="1" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_m"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <!-- 卡片宽度只有屏幕的 86%，两个键又按 1:1.5 分，
+             所以文案必须单行 + 字号自适应，否则"清除该条件"会折行被裁。 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnClearMode"
+            style="@style/BtnFhlLight"
+            android:layout_width="0dp"
+            android:layout_height="46dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="@dimen/fhl_gap_s"
+            android:maxLines="1"
+            android:paddingLeft="@dimen/fhl_btn_pad_h_small"
+            android:paddingRight="@dimen/fhl_btn_pad_h_small"
+            android:text="@string/ms_wheel_clear"
+            android:textSize="@dimen/fhl_fs_body_s"
+            app:autoSizeMaxTextSize="@dimen/fhl_fs_body_s"
+            app:autoSizeMinTextSize="9sp"
+            app:autoSizeStepGranularity="1sp"
+            app:autoSizeTextType="uniform" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnConfirm"
+            style="@style/BtnFhlPrimary"
+            android:layout_width="0dp"
+            android:layout_height="46dp"
+            android:layout_weight="1.5"
+            android:maxLines="1"
+            android:text="@string/ms_wheel_confirm" />
+    </LinearLayout>
+</LinearLayout>

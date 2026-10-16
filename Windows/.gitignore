@@ -1,0 +1,18 @@
+# 编译产物
+src/**/bin/
+src/**/obj/
+*.user
+*.suo
+
+# 开发临时目录（截图、对拍中间文件等）
+_dev/
+
+# 本机题库目录覆盖（一行路径，指向本机的题库目录）
+bank_src.txt
+
+# 日志
+*.log
+
+# Windows 系统文件
+Thumbs.db
+desktop.ini
