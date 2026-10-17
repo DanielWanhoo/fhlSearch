@@ -56,12 +56,12 @@ if not exist "%APK%" (
     echo [错误] 没找到编译产物。
     pause & exit /b 1
 )
-copy /y "%APK%" "dist\忘川检索.apk" >nul
+copy /y "%APK%" "dist\fhlSearch.apk" >nul
 
 echo.
 echo ============================================================
 echo   完成！安装包在这里：
-echo   %~dp0dist\忘川检索.apk
+echo   %~dp0dist\fhlSearch.apk
 echo.
 echo   把它传到手机 / 平板上点一下即可安装（Android 10 及以上）。
 echo   没有配置签名时产物是未签名的，装不上属正常，见 README 的"签名"一节。

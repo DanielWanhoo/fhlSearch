@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-打包发布：生成 dist\\忘川检索.exe、dist\\使用说明.txt，以及项目根目录的 重新生成题库.bat。
+打包发布：生成 dist\\fhlSearch.exe、dist\\使用说明.txt，以及项目根目录的 重新生成题库.bat。
 
 编码约定（很重要，和 Windows 兼容性直接相关）：
   * .bat  -> **GBK / cp936**。cmd.exe 按系统 OEM 代码页读取批处理，中文系统上是 936，
@@ -19,7 +19,7 @@ except Exception:
     pass
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # 项目根目录
-EXE_SRC = os.path.join(ROOT, r"src\FhlSearch\bin\Release\忘川检索.exe")
+EXE_SRC = os.path.join(ROOT, r"src\FhlSearch\bin\Release\fhlSearch.exe")
 DIST = os.path.join(ROOT, "dist")
 DOC_SRC = os.path.join(ROOT, r"docs\使用说明.md")
 BAT_OUT = os.path.join(ROOT, "重新生成题库.bat")
@@ -87,7 +87,7 @@ if errorlevel 1 (
 echo.
 echo [4/4] 全部完成！
 echo.
-echo    新程序位置:  %cd%\dist\忘川检索.exe
+echo    新程序位置:  %cd%\dist\fhlSearch.exe
 echo.
 pause
 """
@@ -120,7 +120,7 @@ def main():
         os.makedirs(DIST)
 
     # 1) exe
-    dst_exe = os.path.join(DIST, "忘川检索.exe")
+    dst_exe = os.path.join(DIST, "fhlSearch.exe")
     shutil.copy2(EXE_SRC, dst_exe)
     print("  已复制 exe       : %s  (%d bytes)" % (dst_exe, os.path.getsize(dst_exe)))
 

@@ -3,7 +3,7 @@
 fhlSearch 检索规则参考实现（只用 Python + openpyxl 直接读原始 xlsx，
 完全不经过 bank.txt 和 C# 代码），用于和程序内的自测输出对拍。
 
-生成检索脚本 -> 交给 忘川检索.exe --selftest 执行 -> 两边结果逐行 diff。
+生成检索脚本 -> 交给 fhlSearch.exe --selftest 执行 -> 两边结果逐行 diff。
 
 用法:
   python tools/ref_check.py gen  <脚本路径>

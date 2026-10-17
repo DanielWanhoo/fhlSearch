@@ -23,7 +23,7 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SDK = os.path.join(os.environ.get('LOCALAPPDATA', ''), 'Android', 'Sdk')
 ADB = os.path.join(SDK, 'platform-tools', 'adb.exe')
-# 默认装 debug 包；想验证正式包就设 FHL_APK 环境变量指向 dist\忘川检索.apk
+# 默认装 debug 包；想验证正式包就设 FHL_APK 环境变量指向 dist\fhlSearch.apk
 APK = os.environ.get('FHL_APK') or os.path.join(_ROOT, 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk')
 SHOTS = os.path.join(_ROOT, 'docs', 'shots')
 PKG = 'com.wangchuan.fhlsearch'

@@ -1,0 +1,35 @@
+# ────────────────────────────────────────────────────────────────
+# 忘川检索 fhlSearch · 仓库根目录属性
+# （各平台子目录另有自己的 .gitattributes，子目录规则优先）
+# ────────────────────────────────────────────────────────────────
+
+# 默认按文本处理，仓库内统一 LF
+* text=auto eol=lf
+
+# ---- 二进制：不做换行转换、不做 diff ----
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary
+*.ico      binary
+*.icns     binary
+
+# ---- 各端编译产物 ----
+*.exe      binary
+*.apk      binary
+*.hap      binary
+*.aab      binary
+*.jar      binary
+*.dll      binary
+*.so       binary
+
+# ---- 题库数据 ----
+*.xlsx     binary
+*.xls      binary
+
+# ---- 签名与证书：绝不入库，这里再兜一层 ----
+*.jks      binary
+*.keystore binary
+*.p12      binary
+*.cer      binary
+*.p7b      binary

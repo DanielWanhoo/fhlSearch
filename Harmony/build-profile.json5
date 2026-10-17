@@ -1,0 +1,44 @@
+{
+  // 说明：这里**不含**签名配置（signingConfigs）。
+  // HarmonyOS 的安装包必须用开发者自己的证书 + 绑定设备的 profile 签名，
+  // 请用 DevEco Studio 打开本工程，在 File → Project Structure → Signing Configs
+  // 里勾选「Automatically generate signature」，用你自己的华为开发者账号自动生成。
+  "app": {
+    "products": [
+      {
+        "name": "default",
+        "targetSdkVersion": "6.1.1(24)",
+        "compatibleSdkVersion": "6.1.1(24)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug"
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}

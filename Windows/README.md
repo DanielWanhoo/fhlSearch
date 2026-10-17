@@ -14,7 +14,7 @@
 
 ## 快速开始
 
-直接下载 [`dist/忘川检索.exe`](dist/忘川检索.exe) 双击运行即可，不需要安装任何东西。
+直接下载 [`dist/fhlSearch.exe`](dist/fhlSearch.exe) 双击运行即可，不需要安装任何东西。
 
 > Win7 需要系统已装 .NET Framework 4.0+；Win10 / Win11 系统自带，开箱即用。
 
@@ -27,6 +27,9 @@
 | 成语检索 | 山石雅集第 14 题 | 319 条成语，拼音 / 声调 / 单字三种模式 + 层级二次检索 |
 | 诗词检索 | 山石雅集第 15 题 | 282 条五言诗句，6×5 字格选字成诗 |
 | 名士检索 | 众里寻他 | 115 位名士，9 种检索条件（滚轮选择 / 模糊输入）+ 检索次数计数 |
+
+> ⚠️ **关于「众里寻他」**：「众里寻他」活动近期没有复刻，本题库依据的是旧版本的规则与
+> 玩家整理的资料，**实际功能可能存在偏差或问题，当前仅供参考**。后续相关活动正式上线后，会据此再作调整。
 
 「检索」与「二次检索」是一对动作按钮，同一时间只显示一个：
 
@@ -51,7 +54,7 @@
 
 ```
 ├── dist/                        发布产物
-│   ├── 忘川检索.exe             ← 单文件绿色程序
+│   ├── fhlSearch.exe            ← 单文件绿色程序
 │   └── 使用说明.txt             由 docs/使用说明.md 自动生成
 ├── data/                        题库源文件（三个 Excel）
 ├── 重新生成题库.bat             改完题库后双击这个
@@ -123,7 +126,7 @@ python tools\build_data.py && dotnet build src\FhlSearch\FhlSearch.csproj -c Rel
 | `诗词检索.xlsx` | 282 条五言诗句（诗句 + 诗名 + 作者） |
 | `名士检索.xlsx` | 115 位名士（朝代/品阶/职业/生逢/出身/技能/爱好/社团/描述） |
 
-改完双击根目录的 `重新生成题库.bat`，新的 `dist\忘川检索.exe` 就出来了。
+改完双击根目录的 `重新生成题库.bat`，新的 `dist\fhlSearch.exe` 就出来了。
 
 > 题库目录默认取项目里的 `data/`；想放到别处，在项目根目录建一个 `bank_src.txt`
 > 写上一行目录路径即可（该文件不会被提交）。
@@ -141,7 +144,7 @@ python tools\build_data.py && dotnet build src\FhlSearch\FhlSearch.csproj -c Rel
 - 《忘川风华录》及其全部游戏内容、名词、角色、设定、文本，版权归 **网易（NetEase）** 所有。
 - 程序代码按 MIT 协议开源；**题库数据不在 MIT 覆盖范围内**，见 [`NOTICE.md`](NOTICE.md)。
 - 题库由第三方整理，可能存在错漏，不保证与游戏内实际内容一致。
-- **如果权利人认为本仓库或本程序有不妥之处，请开一个 [Issue](../../issues) 或联系作者，
+- **如果权利人认为本仓库或本程序有不妥之处，请开一个 [Issue](../../../issues) 或联系作者，
   我会在收到通知后立即核实并移除，无需事先协商。**
 - 请支持正版游戏。
 
@@ -157,7 +160,7 @@ python tools\build_data.py && dotnet build src\FhlSearch\FhlSearch.csproj -c Rel
 ```bat
 python tools\ref_check.py gen _dev\queries.txt                    :: 生成检索用例
 python tools\ref_check.py run _dev\queries.txt _dev\out_python.txt
-忘川检索.exe --selftest _dev\queries.txt _dev\out_csharp.txt
+fhlSearch.exe --selftest _dev\queries.txt _dev\out_csharp.txt
 python tools\diff_check.py                                        :: 逐条比对
 ```
 
@@ -167,7 +170,7 @@ UI 侧再用 `tools/shot.ps1` 驱动真实程序截图 + 读调试日志核对�
 
 ```bat
 powershell -ExecutionPolicy Bypass -File tools\shot.ps1 ^
-    -Exe dist\忘川检索.exe -Out _dev\shot.png -AppDebug ^
+    -Exe dist\fhlSearch.exe -Out _dev\shot.png -AppDebug ^
     -Script "click:5,5|click:429,380|paste:w|click:738,475|wait:1200"
 ```
 

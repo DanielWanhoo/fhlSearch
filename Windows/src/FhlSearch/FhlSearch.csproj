@@ -10,7 +10,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net40</TargetFramework>
     <LangVersion>7.3</LangVersion>
-    <AssemblyName>忘川检索</AssemblyName>
+    <AssemblyName>fhlSearch</AssemblyName>
     <RootNamespace>FhlSearch</RootNamespace>
     <Product>忘川检索</Product>
     <AssemblyTitle>忘川检索 fhlSearch</AssemblyTitle>

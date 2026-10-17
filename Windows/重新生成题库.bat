@@ -61,6 +61,6 @@ if errorlevel 1 (
 echo.
 echo [4/4] 全部完成！
 echo.
-echo    新程序位置:  %cd%\dist\忘川检索.exe
+echo    新程序位置:  %cd%\dist\fhlSearch.exe
 echo.
 pause

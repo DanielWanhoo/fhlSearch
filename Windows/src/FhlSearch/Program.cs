@@ -11,7 +11,7 @@ namespace FhlSearch
         [STAThread]
         static void Main(string[] args)
         {
-            // 自测模式（开发用）：忘川检索.exe --selftest 脚本.txt 输出.txt
+            // 自测模式（开发用）：fhlSearch.exe --selftest 脚本.txt 输出.txt
             if (args != null && args.Length >= 3 && args[0] == "--selftest")
             {
                 try { Environment.Exit(SelfTest.Run(args[1], args[2])); }

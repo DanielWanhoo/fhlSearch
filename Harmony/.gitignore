@@ -1,0 +1,53 @@
+# ────────────────────────────────────────────────────────────────
+# 忘川检索 · HarmonyOS 版 · 版本库忽略清单
+#
+# 原则：只把"源码 / 资源 / 题库 / 文档 / 脚本"纳入版本管理；
+#       能重新生成的产物、本机配置、以及签名密钥都排除在外。
+# ────────────────────────────────────────────────────────────────
+
+# ---- 构建产物（hvigorw assembleHap 可重新生成）----
+/build/
+**/build/
+/.hvigor/
+/.cache/
+/.preview/
+/.test/
+/.appanalyzer/
+oh_modules/
+node_modules/
+
+# ---- 本机配置（DevEco Studio 生成，含本机 SDK 路径）----
+local.properties
+.idea/
+*.iml
+
+# ---- 签名密钥：绝不入库 ----
+*.p12
+*.cer
+*.p7b
+*.jks
+*.keystore
+signing/
+
+# ---- 原生编译中间产物 ----
+.cxx/
+/.clangd
+/.clang-format
+/.clang-tidy
+
+# ---- Python 运行缓存 ----
+__pycache__/
+*.pyc
+
+# ---- 内部开发资料：只留本机，不入库 ----
+#   dev-logs/   逐日开发日志、旧源码备份、开发期截图
+#   CLAUDE.md   AI 协作说明（内含本机绝对路径）
+dev-logs/
+CLAUDE.md
+
+# ---- 杂项 ----
+*.log
+*.tmp
+Thumbs.db
+desktop.ini
+.DS_Store

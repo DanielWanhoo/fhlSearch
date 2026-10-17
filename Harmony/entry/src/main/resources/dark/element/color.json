@@ -1,0 +1,88 @@
+{
+  "color": [
+    {
+      "name": "start_window_background",
+      "value": "#1C1813"
+    },
+    {
+      "name": "primary",
+      "value": "#C95A4A"
+    },
+    {
+      "name": "background",
+      "value": "#1C1813"
+    },
+    {
+      "name": "card_bg",
+      "value": "#262019"
+    },
+    {
+      "name": "glass_bg",
+      "value": "#29FFFFFF"
+    },
+    {
+      "name": "glass_primary",
+      "value": "#D9C95A4A"
+    },
+    {
+      "name": "glass_press",
+      "value": "#3DFFFFFF"
+    },
+    {
+      "name": "glass_edge",
+      "value": "#3DFFFFFF"
+    },
+    {
+      "name": "glass_card_bg",
+      "value": "#29FFFFFF"
+    },
+    {
+      "name": "glass_card_edge",
+      "value": "#3DFFFFFF"
+    },
+    {
+      "name": "glass_primary_edge",
+      "value": "#66FFFFFF"
+    },
+    {
+      "name": "cell_bg",
+      "value": "#2E2720"
+    },
+    {
+      "name": "cell_border",
+      "value": "#3E362C"
+    },
+    {
+      "name": "text_primary",
+      "value": "#E8E0D0"
+    },
+    {
+      "name": "text_secondary",
+      "value": "#9A8F7A"
+    },
+    {
+      "name": "match_highlight",
+      "value": "#5CB877"
+    },
+    {
+      "name": "match_highlight_bg",
+      "value": "#1F2E22"
+    },
+    {
+      "name": "card_shadow",
+      "value": "#00000000"
+    },
+    {
+      "name": "on_primary",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "bar_scrim",
+      "value": "#B31C1813"
+    },
+    {
+      "name": "nav_glow",
+      "value": "#26C95A4A"
+    }
+  ]
+}

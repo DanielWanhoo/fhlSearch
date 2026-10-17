@@ -27,7 +27,7 @@ SOFTWARE.
 上面的 MIT 协议只覆盖**程序代码**（app/、tools/、docs/）。
 
 题库数据（data/*.xlsx、app/src/main/assets/tiku_*.json，以及编译进
-dist/忘川检索.apk 的内嵌题库）不在 MIT 授权范围内，其版权归原整理者所有，
+dist/fhlSearch.apk 的内嵌题库）不在 MIT 授权范围内，其版权归原整理者所有，
 详见 NOTICE.md。
 
 The MIT license above covers the source code only.

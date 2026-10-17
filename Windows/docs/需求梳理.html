@@ -100,8 +100,8 @@ footer{
 <hr/>
 <h2>二、运行环境与技术方案</h2>
 <h3>2.1 技术选型 ✅ 方案 A</h3>
-<p><strong>C# WinForms + .NET Framework 4.0</strong>，编译成单个 <code>忘川检索.exe</code>。</p>
-<table><thead><tr><th>项目</th><th>说明</th></tr></thead><tbody><tr><td>产物</td><td>单个 <code>忘川检索.exe</code>，预计 <strong>0.5–1.5 MB</strong></td></tr><tr><td>绿色免安装</td><td>✅ 不写注册表、不释放临时文件、不修改系统</td></tr><tr><td>Win10 / Win11</td><td>✅ 系统自带 .NET 4.8，<strong>双击直接运行</strong></td></tr><tr><td>Win8 / 8.1</td><td>✅ 系统自带 .NET 4.5+，直接运行</td></tr><tr><td>Win7 SP1</td><td>⚠️ 需系统已装 <strong>.NET Framework 4.0 或以上</strong>（打过 Windows 更新基本都有；若没有，微软官网免费安装包约 48 MB，装一次即可）</td></tr><tr><td>32 / 64 位</td><td>✅ 同一个 exe 在 32 位和 64 位系统上都能跑</td></tr></tbody></table>
+<p><strong>C# WinForms + .NET Framework 4.0</strong>，编译成单个 <code>fhlSearch.exe</code>。</p>
+<table><thead><tr><th>项目</th><th>说明</th></tr></thead><tbody><tr><td>产物</td><td>单个 <code>fhlSearch.exe</code>，预计 <strong>0.5–1.5 MB</strong></td></tr><tr><td>绿色免安装</td><td>✅ 不写注册表、不释放临时文件、不修改系统</td></tr><tr><td>Win10 / Win11</td><td>✅ 系统自带 .NET 4.8，<strong>双击直接运行</strong></td></tr><tr><td>Win8 / 8.1</td><td>✅ 系统自带 .NET 4.5+，直接运行</td></tr><tr><td>Win7 SP1</td><td>⚠️ 需系统已装 <strong>.NET Framework 4.0 或以上</strong>（打过 Windows 更新基本都有；若没有，微软官网免费安装包约 48 MB，装一次即可）</td></tr><tr><td>32 / 64 位</td><td>✅ 同一个 exe 在 32 位和 64 位系统上都能跑</td></tr></tbody></table>
 <blockquote>已实测：本机 <code>dotnet build</code> 成功产出可运行的 net40 WinForms exe，方案可行。</blockquote>
 <h3>2.2 题库数据处理 ✅ 内嵌</h3>
 <p>程序<strong>不依赖 Excel、不依赖任何第三方组件</strong>。在打包阶段把三个 <code>.xlsx</code> 转成程序内部数据（JSON），压缩后<strong>编译进 exe</strong>。这样：</p>
@@ -201,7 +201,7 @@ footer{
 <table><thead><tr><th>阶段</th><th>内容</th></tr></thead><tbody><tr><td><strong>① 需求确认</strong></td><td>本次交付，等你最终点头</td></tr><tr><td>② 框架搭建</td><td>数据管道（xlsx → 内嵌 JSON）、主窗口骨架、侧边栏、分栏、中国风主题引擎</td></tr><tr><td>③ 成语检索</td><td>三种模式 + 层级检索 + 绿色标注</td></tr><tr><td>④ 诗词检索</td><td>6×5 字格 + 方向键 + 匹配算法 + 点选高亮</td></tr><tr><td>⑤ 名士检索</td><td>9 模式 + 模糊检索 + 计数 + 层级逻辑</td></tr><tr><td>⑥ 收尾交付</td><td>联调、打包、Win7 / 10 / 11 兼容性检查、写使用说明</td></tr></tbody></table>
 <p>每个阶段完成后我会给你一个可以直接双击运行的 exe 试玩，你提意见我就改。</p>
 <h3>8.2 交付物</h3>
-<table><thead><tr><th>交付物</th><th>说明</th></tr></thead><tbody><tr><td><code>忘川检索.exe</code></td><td>单文件，双击即用</td></tr><tr><td><code>重新生成题库.bat</code></td><td>你改了 Excel 题库后双击它，自动重跑转换 + 重新编译出新 exe</td></tr><tr><td><code>使用说明.md</code></td><td>含 Win7 需要装 .NET 4.0 的说明</td></tr><tr><td>全部源码</td><td>带清晰中文注释</td></tr></tbody></table>
+<table><thead><tr><th>交付物</th><th>说明</th></tr></thead><tbody><tr><td><code>fhlSearch.exe</code></td><td>单文件，双击即用</td></tr><tr><td><code>重新生成题库.bat</code></td><td>你改了 Excel 题库后双击它，自动重跑转换 + 重新编译出新 exe</td></tr><tr><td><code>使用说明.md</code></td><td>含 Win7 需要装 .NET 4.0 的说明</td></tr><tr><td>全部源码</td><td>带清晰中文注释</td></tr></tbody></table>
 <hr/>
 <h2>九、审核确认</h2>
 <p>请确认上面这份文档是否<strong>完全符合你的需求</strong>。你可以：</p>
@@ -210,7 +210,7 @@ footer{
 <h2>十、开发完成情况（2026-10-13 更新）</h2>
 <p><strong>✅ 已按本文档全部实现并验证通过。</strong></p>
 <h3>交付物</h3>
-<table><thead><tr><th>交付物</th><th>位置</th></tr></thead><tbody><tr><td>程序（单文件绿色版）</td><td><code>dist\忘川检索.exe</code></td></tr><tr><td>使用说明</td><td><code>dist\使用说明.txt</code></td></tr><tr><td>一键重新生成题库</td><td><code>重新生成题库.bat</code></td></tr><tr><td>全部源码</td><td><code>src\FhlSearch\</code></td></tr><tr><td>技术说明</td><td><code>docs\技术说明.md</code></td></tr></tbody></table>
+<table><thead><tr><th>交付物</th><th>位置</th></tr></thead><tbody><tr><td>程序（单文件绿色版）</td><td><code>dist\fhlSearch.exe</code></td></tr><tr><td>使用说明</td><td><code>dist\使用说明.txt</code></td></tr><tr><td>一键重新生成题库</td><td><code>重新生成题库.bat</code></td></tr><tr><td>全部源码</td><td><code>src\FhlSearch\</code></td></tr><tr><td>技术说明</td><td><code>docs\技术说明.md</code></td></tr></tbody></table>
 <h3>验证结果</h3>
 <table><thead><tr><th>验证项</th><th>结果</th></tr></thead><tbody><tr><td>检索规则交叉对拍（C# 实现 vs 独立 Python 参考实现，后者直接读原始 xlsx）</td><td>✅ 215 条用例结果<strong>完全一致</strong></td></tr><tr><td>成语检索三模式 + 层级二次检索 + 绿色标注</td><td>✅ UI 实测通过</td></tr><tr><td>诗词 6×5 字格 + 方向键 + 打乱顺序选字成诗 + 点选高亮</td><td>✅ UI 实测通过</td></tr><tr><td>名士 9 模式 + 模糊检索 + 检索次数 + 三种结果态按钮</td><td>✅ UI 实测通过</td></tr><tr><td>「未检索到」空结果态</td><td>✅ 实测通过（名士选「辽」）</td></tr><tr><td>「仅 1 条结果」时只给两个按钮</td><td>✅ 实测通过</td></tr><tr><td>绿色免安装（拷到空目录运行，无新增文件、无注册表写入）</td><td>✅ 实测通过</td></tr><tr><td>最小窗口 900×620 布局</td><td>✅ 实测通过</td></tr><tr><td>200% 屏幕缩放下显示</td><td>✅ 实测通过（DPI 感知 + 自绘缩放）</td></tr></tbody></table>
 <h3>实测截图确认的关键细节</h3>
