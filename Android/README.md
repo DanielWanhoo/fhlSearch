@@ -138,6 +138,7 @@ Android/
 │   ├── 需求梳理.md               需求、决策与逐轮改动记录（最完整的一份）
 │   ├── 使用说明.md               给使用者看的说明
 │   ├── 界面文案与配色规范.md      全部文案与配色取值
+│   ├── 图片识别调试.md            改 OCR 时怎么定位"切歪 / 取字失败 / 认错字"
 │   ├── 需求原文/                 最初的三份需求文本
 │   ├── icons/                    图标导出件与设计方案对比
 │   ├── screenshots/              README 用的截图
@@ -283,6 +284,10 @@ gradlew.bat :app:assembleRelease    :: 重新编译
 | `drive_app.py` | 在模拟器上走全流程、抓图、查崩溃 |
 | `test_*.py` | 上面那批回归脚本 |
 | `measure_layout.py` | 量关键控件的真实坐标（改布局时用） |
+| `gen_t2s.py` | 生成**繁→简小表** `ocr/T2S.kt`（用 Windows 的 LCMapString 扫 U+4E00..U+9FFF，只留题库里用得上的对子；改了题库才需要重跑） |
+| `ocr_probe.py` | 图片识别**只算几何**：面板检测 / 投影切格 / 等距点阵拟合 / 每格墨迹（不装机，电脑上秒出） |
+| `ocr_one.py` | 图片识别**单张排查**：在设备上真跑一张、打全过程日志，`--dump` 还能把三趟拼板 PNG 拉回来 |
+| `montage_cell.py` | 把拼板里某一格打成 ASCII，看**送进 ML Kit 的实际图形** |
 | `gen_app_icon.py` / `export_app_icon.py` / `check_adaptive_icon.py` | 生成与导出图标（朱砂圆印 + 自适应图标） |
 | `setup_gradle_wrapper.py` | 铺 Gradle Wrapper（本机没有 Android Studio 时的备用手段） |
 
