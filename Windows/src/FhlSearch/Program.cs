@@ -19,6 +19,39 @@ namespace FhlSearch
                 return;
             }
 
+            // 图片识别（开发用，也方便排查用户的截图）：fhlSearch.exe --ocr 图.png 输出.txt
+            if (args != null && args.Length >= 2 && args[0] == "--ocr")
+            {
+                try
+                {
+                    Ocr.OcrResult r = Ocr.PoemOcr.Recognize(args[1]);
+                    StringBuilder sb = new StringBuilder();
+                    sb.AppendLine(r.Ok ? "OK" : "FAIL");
+                    if (!string.IsNullOrEmpty(r.Error)) sb.AppendLine("ERROR: " + r.Error);
+                    sb.AppendLine(r.Detail);
+                    sb.AppendLine("字格:");
+                    for (int rr = 0; rr < Ocr.PoemOcr.Rows; rr++)
+                    {
+                        StringBuilder line = new StringBuilder("    ");
+                        for (int cc = 0; cc < Ocr.PoemOcr.Cols; cc++)
+                        {
+                            char ch = r.Cells[rr * Ocr.PoemOcr.Cols + cc];
+                            line.Append(ch == '\0' ? "？" : ch.ToString());
+                            line.Append(' ');
+                        }
+                        sb.AppendLine(line.ToString());
+                    }
+                    sb.AppendLine("共识别 " + r.Filled + " / " + Ocr.PoemOcr.Count + " 格");
+                    if (args.Length >= 3)
+                        File.WriteAllText(args[2], sb.ToString(), new UTF8Encoding(false));
+                    else
+                        Console.Out.Write(sb.ToString());
+                    Environment.Exit(r.Ok ? 0 : 1);
+                }
+                catch (Exception ex) { Console.Error.WriteLine(ex); Environment.Exit(3); }
+                return;
+            }
+
             try
             {
                 if (args != null)

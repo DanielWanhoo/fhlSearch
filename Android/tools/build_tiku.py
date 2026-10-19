@@ -2,18 +2,14 @@
 r"""题库转换：三份 Excel → 程序内嵌数据。
 
 用法：
-    python tools/build_tiku.py [--out <输出目录>]
+    python build_tiku.py [--out <输出目录>]
 
-读 `data/` 下的三份 Excel，生成到 `app/src/main/assets/`：
+默认输出到 app/src/main/assets\ 下：
     tiku_chengyu.json   成语题库（319 条）
     tiku_shici.json     诗词题库（282 条）
     tiku_mingshi.json   名士题库（115 位）
 
-题库目录默认是项目里的 `data/`；想放到别处，设环境变量 FHL_TIKU_SRC 指向那个目录。
-`data/` 下找不到 Excel 时本脚本会跳过转换（构建直接沿用 assets/ 里已有的 JSON），
-所以没有 Python 环境也能正常出包。
-
-设计要点（与《需求梳理.md》一致）：
+设计要点（与《需求梳理_Android.md》一致）：
   1. 单字一律从"成语 / 诗句"文本现算，不读 Excel 的公式列，避免公式缓存问题；
   2. 拼音统一转小写（题库里有两处首字母大写）；声调统一转字符串 "1"~"4"；
   3. 名士按"名士列非空即块首"归并，爱好 / 社团 / 描述可多值；
@@ -33,7 +29,7 @@ import openpyxl
 # ---- 路径：全部按"本脚本所在位置"推算，克隆到任何目录下都能直接跑 ----
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-SRC = os.environ.get('FHL_TIKU_SRC') or os.path.join(_ROOT, 'data')
+SRC = os.path.join(_ROOT, 'data')
 DEFAULT_OUT = os.path.join(_ROOT, 'app', 'src', 'main', 'assets')
 
 F_CS = os.path.join(SRC, '成语检索.xlsx')
@@ -183,15 +179,6 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--out', default=DEFAULT_OUT)
     args = ap.parse_args()
-
-    missing = [p for p in (F_CS, F_SC, F_MS) if not os.path.exists(p)]
-    if missing:
-        print('未找到题库源文件，跳过转换（构建将沿用 assets/ 里已生成的 JSON）：')
-        for p in missing:
-            print('  -', p)
-        print('提示：把三份 xlsx 放进 %s 后重跑本脚本即可更新题库。' % SRC)
-        return
-
     os.makedirs(args.out, exist_ok=True)
 
     print('=' * 68)

@@ -16,6 +16,7 @@ import com.wangchuan.fhlsearch.databinding.FragmentFhlMingshiBinding
 import com.wangchuan.fhlsearch.databinding.ViewFhlResultBinding
 import com.wangchuan.fhlsearch.logic.MingshiLogic
 import com.wangchuan.fhlsearch.logic.MsMode
+import com.wangchuan.fhlsearch.ui.sheet.InfoSheetFragment
 import com.wangchuan.fhlsearch.ui.sheet.InputSheetFragment
 import com.wangchuan.fhlsearch.ui.sheet.MingshiDetailSheetFragment
 import com.wangchuan.fhlsearch.ui.sheet.OptionSheetFragment
@@ -86,6 +87,7 @@ class MingshiFragment : Fragment(), ResultHost {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         b.header.tvTitle.setText(R.string.ms_title)
         b.header.tvSubtitle.setText(R.string.ms_subtitle)
+        b.header.btnInfo.setOnClickListener { InfoSheetFragment.show(childFragmentManager) }
 
         result = ResultView(b.result as ViewFhlResultBinding, b.actions, this)
         result.secondSearchEnabled = true

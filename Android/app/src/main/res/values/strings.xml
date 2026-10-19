@@ -43,8 +43,29 @@
     <string name="sc_search">开始检索</string>
     <string name="sc_result_count">匹配结果 (%1$d)</string>
     <string name="sc_no_result">未找到可组成的诗句</string>
+    <string name="sc_no_result_ocr">未找到可组成的诗句\n\n识别结果可能有错：对照截图把认错的字改掉，再点「开始检索」</string>
     <string name="sc_result_line">%1$s · %2$s · %3$s</string>
     <string name="sc_order_hint">序号 ①②③④⑤ 表示该字取自哪一格</string>
+
+    <!-- 诗词检索：图片识别（拍照 / 相册） -->
+    <string name="ocr_camera">拍照识别</string>
+    <string name="ocr_gallery">相册识别</string>
+    <string name="ocr_busy">正在识别图片…</string>
+    <string name="ocr_busy_hint">正在找出 6×5 字格并辨认其中的汉字</string>
+    <string name="ocr_done">已识别 %1$d / %2$d 格，正在检索</string>
+    <string name="ocr_done_partial">已识别 %1$d / %2$d 格，空格请对照截图补上</string>
+    <string name="ocr_no_camera">没有找到可用的相机应用，请改用「相册识别」</string>
+    <string name="ocr_failed">识别失败</string>
+    <string name="ocr_need_image">没能读到这张图片，请换一张试试</string>
+
+    <!-- 信息（大标题右边的图标）：软件信息 + 使用方法 -->
+    <string name="info_button">信息</string>
+    <string name="info_caption">软件信息与使用方法</string>
+    <string name="info_title">忘川检索 · fhlSearch</string>
+    <string name="info_version">版本 %1$s ｜ Android 10 及以上 ｜ 完全离线</string>
+    <string name="info_stats">题库：成语 %1$d 条 · 诗词 %2$d 条 · 名士 %3$d 位</string>
+    <string name="info_close">关闭</string>
+    <string name="info_body">【这是什么】\n《忘川风华录》「山石雅集」与「众里寻他」三类检索题的离线查询工具。题库内嵌在 App 里，不联网、不申请任何权限、不用登录。\n\n【成语检索 · 山石雅集第 14 题】\n· 三个页签：拼音 / 声调 / 单字，各 4 个格子，对应成语的第 1~4 个字\n· 拼音模糊匹配，声调填 1~4，单字填一个汉字；留空的格子表示这一位不限\n· 点「检索」出结果：每条显示成语 / 带调拼音 / 声调，填过的位次会标绿\n· 结果多于一条时可以「二次检索」：在上一次的结果里接着筛，一层层缩小范围\n· 检索键在第一次出结果后自动收起，点「清空所有」回到初始状态时恢复\n\n【诗词检索 · 山石雅集第 15 题】\n· 6×5 = 30 个格子，每格一个汉字；点格子后直接打字（接外接键盘可用方向键移动）\n· 点「开始检索」，程序找出能由格中字拼出的诗句，顺序不限\n· 命中的字会在格子里标绿并标上 ①②③④⑤，表示这几个字取自哪一格\n\n【诗词检索 · 图片识别】\n· 点「拍照识别」或「相册识别」，把带 6×5 字格的图片交给程序\n· 程序会自动找出 6×5 字格、认出 30 个汉字填进去，并直接开始检索\n· 识别用的是 ML Kit 中文文字识别：模型已内嵌，离线可用，图片不会离开手机\n· 认错个别字可以直接改：点那一格改掉，再点「开始检索」\n识别率高的图片：字格完整（连边框一起拍/截）、尽量用原图别用压缩过的转发图、别拍得太斜、深色格子配浅色字也能认\n\n【名士检索 · 众里寻他】\n· 九种条件：朝代 / 爱好 / 社团 / 品阶 / 职业 / 生逢 / 出身·身世 / 技能 / 其他描述\n· 前四种点开是滚轮，其余五种是输入框，都支持模糊匹配；条件可以叠加\n· 结果多于一条时可以「二次检索」继续缩小范围；点结果里的任意一行看该名士的全部描述\n· 右上角「检索 N 次」在点「清空所有」时归零\n\n【关于题库与版权】\n· 题库来源于微博 @蓝在寻（原整理者），本程序只做了格式转换，不对题库内容主张权利\n· 《忘川风华录》相关内容版权归网易所有；本程序是非商业同人工具，不含任何游戏美术 / 音频资源\n· 如权利人认为有不妥，请在项目仓库留言，会立即移除\n\n【隐私】\n· 不联网、不收集任何数据、没有统计也没有广告\n· 图片识别全部在本机完成，图片不会上传到任何地方</string>
 
     <!-- 名士检索（众里寻他） -->
     <string name="ms_title">众里寻他</string>

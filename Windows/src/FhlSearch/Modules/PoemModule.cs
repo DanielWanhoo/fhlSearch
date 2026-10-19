@@ -26,7 +26,7 @@ namespace FhlSearch.Modules
 
         HeaderView _header;
         PoemGrid _grid;
-        FButton _btnClear, _btnSearch;
+        FButton _btnClear, _btnSearch, _btnOcr;
         FButton _btnClearAll, _btnClearCur;
         ResultList _list;
 
@@ -35,6 +35,7 @@ namespace FhlSearch.Modules
         int _focus = 0;
         int _searchCount;
         bool _searched;
+        bool _filling;      // 正在批量填格（从图片识别），期间不要自动跳格
         int[] _hitCells = new int[0];
         List<Poem> _rows = new List<Poem>();
         Dictionary<Poem, int[]> _cellMap = new Dictionary<Poem, int[]>();
@@ -55,6 +56,7 @@ namespace FhlSearch.Modules
             Controls.Add(_grid);
             BuildCells();
 
+            _btnOcr = MakeButton("从图片识别", FButton.Kind.Light, delegate { OnImportImage(); });
             _btnClear = MakeButton("清空", FButton.Kind.Light, delegate { ClearAll(); });
             _btnSearch = MakeButton("开始检索", FButton.Kind.Primary, delegate { DoSearch(); });
 
@@ -156,6 +158,8 @@ namespace FhlSearch.Modules
             bool wasEmpty = _chars[i] == '\0';
             _chars[i] = keep.Length > 0 ? keep[0] : '\0';
             _grid.Invalidate();
+
+            if (_filling) return;          // 批量填格时不要每格都清结果、跳格
 
             if (_searched) ClearResultsOnly();
 
@@ -284,6 +288,90 @@ namespace FhlSearch.Modules
             Invalidate();
         }
 
+        // ------------------------------------------------------------ 从图片识别
+
+        /// <summary>
+        /// 「从图片识别」：选一张带 6×5 字格的截图，认出 30 个字填进格子，然后自动检索。
+        /// 识别本身在 Ocr.PoemOcr 里（找面板 → 找 6×5 网格 → 逐格抠图拼板 → 系统 OCR）。
+        /// </summary>
+        void OnImportImage()
+        {
+            string unsupported = Ocr.PoemOcr.UnsupportedReason;
+            if (unsupported != null)
+            {
+                MessageBox.Show(FindForm(), "这条功能用不了：\r\n\r\n" + unsupported,
+                    "从图片识别", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            string path;
+            using (OpenFileDialog dlg = new OpenFileDialog())
+            {
+                dlg.Title = "选择包含字格的题目截图";
+                dlg.Filter = "图片文件|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff|所有文件|*.*";
+                dlg.CheckFileExists = true;
+                dlg.Multiselect = false;
+                if (dlg.ShowDialog(FindForm()) != DialogResult.OK) return;
+                path = dlg.FileName;
+            }
+
+            Cursor prevCursor = Cursor;
+            try
+            {
+                Cursor = Cursors.WaitCursor;
+                _btnOcr.Text = "识别中…";
+                _btnOcr.Update();          // 把"识别中"立刻画出来，别等识别完
+
+                Ocr.OcrResult r = Ocr.PoemOcr.Recognize(path);
+                Dbg.Log("诗词 OCR " + System.IO.Path.GetFileName(path) + " -> "
+                        + r.Filled + "/" + Count + (r.Ok ? "" : " 失败：" + r.Error));
+
+                if (!r.Ok)
+                {
+                    MessageBox.Show(FindForm(), r.Error, "从图片识别",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // 批量填格：期间屏蔽 OnCellEdited 的"自动跳格 / 清结果"
+                _filling = true;
+                try
+                {
+                    for (int i = 0; i < Count; i++)
+                    {
+                        char ch = r.Cells[i];
+                        string s = ch == '\0' ? "" : ch.ToString();
+                        if (_cells[i].Text != s) _cells[i].Text = s;
+                        _chars[i] = ch;
+                    }
+                }
+                finally { _filling = false; }
+
+                _focus = 0;
+                _searched = false;
+                _grid.Invalidate();
+                Flash("从图片识别到 " + r.Filled + " 个字");
+                DoSearch();
+
+                // 识别出来的字拼不出诗句 —— 多半是某个字认错了，明确告诉用户去改，
+                // 不然他只会看到"未检索到"，还以为是题目抄错了
+                if (_rows.Count == 0)
+                {
+                    MessageBox.Show(FindForm(),
+                        "已从图片识别出 " + r.Filled + " 个汉字，但拼不出题库里的诗句。\r\n\r\n"
+                        + "通常是其中个别字认错了（字太小、截图糊、被界面挡住）。\r\n"
+                        + "请对着截图检查一下字格，把认错的字改掉，再点「开始检索」。",
+                        "从图片识别", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            finally
+            {
+                _btnOcr.Text = "从图片识别";
+                _btnOcr.Invalidate();
+                Cursor = prevCursor;
+            }
+        }
+
         // ------------------------------------------------------------ 布局
 
         protected override void OnResize(EventArgs e)
@@ -337,10 +425,13 @@ namespace FhlSearch.Modules
             _grid.SetBounds(cardX, hh, cardW, gridH + pad * 2);
             _grid.Configure(cell, gapPx, pad, _cells);
 
-            // 清空 / 开始检索
-            int bw1 = (left.Width - Ui.Px(Ui.GapS)) * 10 / 26;
-            _btnClear.SetBounds(left.X, btnY, bw1, btnH);
-            _btnSearch.SetBounds(_btnClear.Right + Ui.Px(Ui.GapS), btnY, left.Right - _btnClear.Right - Ui.Px(Ui.GapS), btnH);
+            // 从图片识别 / 清空 / 开始检索
+            int inner = left.Width - gap * 2;
+            int bw1 = inner * 30 / 100;          // 从图片识别
+            int bw2 = inner * 18 / 100;          // 清空
+            _btnOcr.SetBounds(left.X, btnY, bw1, btnH);
+            _btnClear.SetBounds(_btnOcr.Right + gap, btnY, bw2, btnH);
+            _btnSearch.SetBounds(_btnClear.Right + gap, btnY, left.Right - _btnClear.Right - gap, btnH);
 
             // 结果区
             int g = Ui.Px(Ui.GapS);

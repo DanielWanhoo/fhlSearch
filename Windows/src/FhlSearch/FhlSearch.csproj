@@ -15,8 +15,8 @@
     <Product>忘川检索</Product>
     <AssemblyTitle>忘川检索 fhlSearch</AssemblyTitle>
     <Company>fhlSearch</Company>
-    <Version>1.1.0</Version>
-    <FileVersion>1.1.0.0</FileVersion>
+    <Version>3.1.0</Version>
+    <FileVersion>3.1.0.0</FileVersion>
     <Copyright>Copyright © 2026</Copyright>
     <Description>非商业同人工具，仅供个人学习交流。题库来源于微博 @蓝在寻，相关知识内容版权归网易所有。</Description>
     <NeutralLanguage>zh-CN</NeutralLanguage>
@@ -47,6 +47,8 @@
   <!-- 内嵌题库（由 tools/build_data.py 生成） -->
   <ItemGroup>
     <EmbeddedResource Include="Resources\bank.txt" LogicalName="FhlSearch.bank.txt" />
+    <!-- 「使用说明」里点「查看截图样例」时显示的那张图 -->
+    <EmbeddedResource Include="Resources\ocr-sample.jpg" LogicalName="FhlSearch.ocr-sample.jpg" />
   </ItemGroup>
 
   <ItemGroup>

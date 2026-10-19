@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 图片识别进行中的提示卡片：转圈 + 两行说明 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_fhl_sheet"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:padding="@dimen/fhl_gap_xl">
+
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:indeterminate="true"
+        app:indicatorColor="@color/fhl_vermilion"
+        app:indicatorSize="40dp"
+        app:trackThickness="3dp" />
+
+    <TextView
+        style="@style/TextFhlBody"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_m"
+        android:text="@string/ocr_busy"
+        android:textStyle="bold" />
+
+    <TextView
+        style="@style/TextFhlCaption"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_xs"
+        android:gravity="center"
+        android:text="@string/ocr_busy_hint" />
+</LinearLayout>

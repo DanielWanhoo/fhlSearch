@@ -3,6 +3,7 @@
      注意：这里刻意不用 <merge> 作根——<merge> 布局被 include 时不会把 id 传给子控件，
      运行时会因找不到 id（Missing required view with ID）而崩溃。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/header"
     android:layout_width="match_parent"
@@ -29,7 +30,23 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/fhl_gap_s"
             android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
             tools:text="山石雅集第 14 题" />
+
+        <!-- 大标题右边的「信息」图标：点开看软件信息与使用方法（三个模块都有） -->
+        <ImageButton
+            android:id="@+id/btnInfo"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginStart="@dimen/fhl_gap_xs"
+            android:layout_marginEnd="@dimen/fhl_gap_xs"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/info_button"
+            android:padding="6dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_fhl_info"
+            app:tint="@color/fhl_ink_sub" />
 
         <TextView
             android:id="@+id/tvCount"

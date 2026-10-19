@@ -79,6 +79,24 @@ namespace FhlSearch.Modules
                 "方向键移动格子，朱砂方框是当前格\r\n" +
                 "点「开始检索」后，程序找出能由格中字拼出的诗句\r\n" +
                 "点结果里的某一条，字格上会绿框标出用的是哪几格\r\n\r\n" +
+                "【诗词检索 · 从图片识别】\r\n" +
+                "点「从图片识别」，选一张题目截图，程序会自动找出 6×5 字格、\r\n" +
+                "认出 30 个汉字填进去，并直接开始检索 —— 不用一个个敲字。\r\n" +
+                "用的是 Windows 自带的文字识别，需要 Windows 10 (1809) 及以上，\r\n" +
+                "且系统装了简体中文 OCR 组件（中文版 Win10/11 一般自带）。\r\n" +
+                "Win7 / 8.1 上用不了这条功能，其余功能不受影响，汉字仍可手动输入。\r\n" +
+                "\r\n" +
+                "截图建议（照做识别率最高，点下方「查看截图样例」可看一张理想输入）：\r\n" +
+                "· 6×5 字格要完整，连边框一起截；周围多截点界面没关系，会自动裁\r\n" +
+                "· 上下有黑边、带手机状态栏都没影响，会自动裁掉\r\n" +
+                "· 别用缩略图：图片长边建议 800 像素以上，单字实际低于 40 像素会明显变差\r\n" +
+                "· 微信 / QQ 转发过的图会被压糊，尽量用原图\r\n" +
+                "· 深色格子配浅色字也能认（会按每格自己的底色判深浅）\r\n" +
+                "· 能截图就别拍屏：反光、角度太斜都会掉识别率\r\n" +
+                "\r\n" +
+                "认错了怎么办：格子里的字本来就是可以改的 ——\r\n" +
+                "直接改掉认错的那个字，再点「开始检索」即可。\r\n" +
+                "若提示「拼不出题库里的诗句」，多半也是个别字认错，对着截图改一下就行。\r\n\r\n" +
                 "【名士检索 · 众里寻他】\r\n" +
                 "点条件行选值：朝代 / 爱好 / 社团 / 品阶 弹出列表选择，其余是输入\r\n" +
                 "选好的条件显示在标题下方「已检索：」那一行，可以叠加\r\n" +
@@ -92,8 +110,24 @@ namespace FhlSearch.Modules
                 "滚轮    光标停在哪个可滚动区域上就滚哪个\r\n\r\n" +
                 "【运行环境】\r\n" +
                 "本程序为绿色免安装单文件，不写注册表。\r\n" +
-                "支持 Windows 7 SP1 及以上；Win7 需已安装 .NET Framework 4.0 或更高。";
-            Text(owner, "使用说明", s, 720, 620);
+                "支持 Windows 7 SP1 及以上；Win7 需已安装 .NET Framework 4.0 或更高。\r\n" +
+                "Windows on Arm（骁龙本 / Arm 平板）：Windows 11 Arm 版可以直接运行\r\n" +
+                "（原生 Arm64 或系统自动仿真）；Windows 10 Arm 版不保证。\r\n" +
+                "程序是纯 .NET 程序，exe 里不含任何 x86 / x64 机器码，与 CPU 架构无关。";
+            using (TextDialog dlg = new TextDialog("使用说明", s, 720, 620, "查看截图样例",
+                       delegate { Sample(owner); }))
+            {
+                if (owner != null) dlg.ShowDialog(owner); else dlg.ShowDialog();
+            }
+        }
+
+        /// <summary>把打包进程序里的那张"理想输入截图"显示出来</summary>
+        public static void Sample(Form owner)
+        {
+            using (SampleDialog dlg = new SampleDialog())
+            {
+                if (owner != null) dlg.ShowDialog(owner); else dlg.ShowDialog();
+            }
         }
 
         public static void About(Form owner)
@@ -480,10 +514,15 @@ namespace FhlSearch.Modules
 
     // ============================================================ 纯文本
 
-    /// <summary>使用说明 / 关于题库：标准只读文本框</summary>
+    /// <summary>使用说明 / 关于题库：标准只读文本框；可额外挂一个按钮（如「查看截图样例」）</summary>
     class TextDialog : FhlDialog
     {
         public TextDialog(string title, string body, int w, int h)
+            : this(title, body, w, h, null, null)
+        {
+        }
+
+        public TextDialog(string title, string body, int w, int h, string extraText, EventHandler extraClick)
             : base(title, w, h)
         {
             TextBox tb = new TextBox();
@@ -502,8 +541,66 @@ namespace FhlSearch.Modules
             Controls.Add(tb);
 
             Button close = MakeButton("关闭", delegate { Close(); });
-            PlaceButtons(w, h - 14 - 30, close);
+            if (extraText != null && extraClick != null)
+            {
+                Button extra = MakeButton(extraText, extraClick);
+                // PlaceButtons 是"从右往左"排，最后一个参数在最右下角
+                PlaceButtons(w, h - 14 - 30, extra, close);
+            }
+            else
+            {
+                PlaceButtons(w, h - 14 - 30, close);
+            }
             CancelButton = close;
+        }
+    }
+
+    // ============================================================ 截图样例
+
+    /// <summary>
+    /// 「使用说明」里点「查看截图样例」弹出来的图：
+    /// 就是一张理想的输入截图 —— 6×5 字格完整、连边框一起截、字够大够清晰。
+    /// 图片以资源形式打在 exe 里，仍然是单文件。
+    /// </summary>
+    class SampleDialog : FhlDialog
+    {
+        const int W = 680, H = 580;
+
+        public SampleDialog()
+            : base("截图样例（理想的输入长这样）", W, H)
+        {
+            int capH = 24, btnY = H - 14 - 30;
+            MakeLabel("整格完整 · 连边框一起截 · 字够大够清晰（可以带黑边和状态栏，程序会自动裁）",
+                      14, 10, W - 28, capH);
+
+            PictureBox pb = new PictureBox();
+            pb.SizeMode = PictureBoxSizeMode.Zoom;
+            pb.BorderStyle = BorderStyle.FixedSingle;
+            pb.BackColor = Pal.CardSoft;
+            pb.SetBounds(Ui.Px(14), Ui.Px(10 + capH + 6),
+                         Ui.Px(W - 28), Ui.Px(btnY - 10 - capH - 6 - 10));
+            pb.Image = LoadSample();
+            Controls.Add(pb);
+
+            Button close = MakeButton("关闭", delegate { Close(); });
+            PlaceButtons(W, btnY, close);
+            CancelButton = close;
+        }
+
+        /// <summary>取出打包进程序里的样例图（Image 需要流保持打开，所以复制一份出来）</summary>
+        static Image LoadSample()
+        {
+            try
+            {
+                using (System.IO.Stream st = System.Reflection.Assembly.GetExecutingAssembly()
+                           .GetManifestResourceStream("FhlSearch.ocr-sample.jpg"))
+                {
+                    if (st == null) return null;
+                    using (Image tmp = Image.FromStream(st))
+                        return new Bitmap(tmp);
+                }
+            }
+            catch { return null; }
         }
     }
 }

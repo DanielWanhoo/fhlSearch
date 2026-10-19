@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 r"""字体缩放压力测试：把系统字号调大后走一遍，看布局会不会崩（折行/裁字/挤没）。
 
-用法：python tools\test_font_scale.py 2.0
+用法：python _analysis\font_scale_test.py 2.0
 """
 import io
 import os

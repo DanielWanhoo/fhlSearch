@@ -4,6 +4,7 @@
      注：原来这里还有一块"虚拟方向键"面板，已按需求删除；
          接外接物理键盘时仍然可以用 ↑ ↓ ← → 移动选中格（由 ShiciGrid 直接处理按键）。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/cond"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -20,6 +21,43 @@
             android:id="@+id/grid"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <!-- 图片识别：拍照 / 相册。识别完会自动填格并直接开始检索。 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_s"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnOcrCamera"
+            style="@style/BtnFhlLight"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/fhl_btn_h_small"
+            android:layout_marginEnd="@dimen/fhl_gap_s"
+            android:layout_weight="1"
+            android:maxLines="1"
+            android:text="@string/ocr_camera"
+            android:textSize="@dimen/fhl_fs_body_s"
+            app:autoSizeMaxTextSize="@dimen/fhl_fs_body_s"
+            app:autoSizeMinTextSize="8sp"
+            app:autoSizeStepGranularity="1sp"
+            app:autoSizeTextType="uniform" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnOcrGallery"
+            style="@style/BtnFhlLight"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/fhl_btn_h_small"
+            android:layout_weight="1"
+            android:maxLines="1"
+            android:text="@string/ocr_gallery"
+            android:textSize="@dimen/fhl_fs_body_s"
+            app:autoSizeMaxTextSize="@dimen/fhl_fs_body_s"
+            app:autoSizeMinTextSize="8sp"
+            app:autoSizeStepGranularity="1sp"
+            app:autoSizeTextType="uniform" />
     </LinearLayout>
 
     <LinearLayout

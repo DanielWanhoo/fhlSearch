@@ -24,9 +24,18 @@ android {
         applicationId = "com.wangchuan.fhlsearch"
         minSdk = 29          // 需求硬指标：Android 10
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 3
+        versionName = "3.0"
         resourceConfigurations += listOf("zh", "zh-rCN")
+
+        // 只打这三种 ABI 的 .so。ML Kit 的中文识别库每个 ABI 都有 10 MB 上下：
+        //   arm64-v8a    现在的手机 / 平板基本都是它
+        //   armeabi-v7a  老一些的 32 位设备
+        //   x86_64       模拟器（保留它才能用正式包在模拟器上验收）
+        // 32 位 x86 早就没人用了，砍掉能省 11 MB。
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+        }
     }
 
     if (hasReleaseKeystore) {
@@ -88,6 +97,13 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.4.0")
     implementation("androidx.viewpager2:viewpager2:1.1.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+
+    // 诗词检索的「图片识别」：ML Kit 中文文字识别（**内置模型**版，不是 play-services 版）。
+    // 内置版的模型跟 apk 一起装，不依赖 Google Play 服务、也不需要联网下载模型 ——
+    // 国产手机通常没有 GMS，用 play-services 版会直接不可用；而这个 App 全程离线。
+    implementation("com.google.mlkit:text-recognition-chinese:16.0.1")
+    // 读相机/相册照片的 EXIF 方向（照片常常"躺着"存，不摆正字格检测必失败）
+    implementation("androidx.exifinterface:exifinterface:1.4.1")
 
     testImplementation("junit:junit:4.13.2")
     // Android 自带的 org.json 在 JVM 单元测试里是空壳（方法会抛 not mocked），

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 r"""量手机端布局：把关键控件的真实 bounds 打出来，用于定位空白/裁切问题。
 
-用法：python tools\measure_layout.py [设备序列号]
+用法：python _analysis\measure_phone.py [设备序列号]
 """
 import io
 import os

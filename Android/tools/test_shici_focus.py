@@ -6,7 +6,7 @@ r"""诗词字格：选中框（selected）与输入焦点（focused）是否同�
   格内隐藏 EditText 的 focused="true"    → 该格拿到了输入焦点（光标 + 输入法目标）
 两者必须落在同一格，否则用方向键移动后打的字会跑到上一格。
 
-用法：python tools\test_shici_focus.py [设备]
+用法：python _analysis\test_shici_focus.py [设备]
 """
 import io
 import os

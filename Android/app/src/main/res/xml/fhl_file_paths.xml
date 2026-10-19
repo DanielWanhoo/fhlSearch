@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 拍照识别时，相机应用把照片写进这个目录（通过 FileProvider 授权给它），
+     文件放在缓存目录里，系统清理缓存时自动收走，不会占用户空间。 -->
+<paths>
+    <cache-path name="ocr" path="ocr/" />
+</paths>

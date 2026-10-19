@@ -25,6 +25,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 拍照识别要用：把缓存目录里的一个空文件授权给相机应用去写。
+             这是"交给系统相机拍照"的标准做法 —— 仍然不需要 CAMERA 权限，
+             照片直接写进本应用自己的缓存目录，不进相册、不经过其它 App。 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/fhl_file_paths" />
+        </provider>
     </application>
 
 </manifest>

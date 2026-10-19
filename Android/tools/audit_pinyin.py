@@ -7,9 +7,11 @@ import os
 
 # ---- 路径：全部按"本脚本所在位置"推算，克隆到任何目录下都能直接跑 ----
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.makedirs(os.path.join(_ROOT, '_analysis'), exist_ok=True)
 
-ASSETS = os.path.join(_ROOT, 'app', 'src', 'main', 'assets')
-OUT = os.path.join(_ROOT, '_analysis', 'pinyin_audit_report.txt')
+ROOT = _ROOT
+ASSETS = os.path.join(ROOT, 'app', 'src', 'main', 'assets')
+OUT = os.path.join(ROOT, '_analysis', 'pinyin_audit_report.txt')
 
 TONES = {
     'a': 'āáǎàa', 'e': 'ēéěèe', 'i': 'īíǐìi',
@@ -138,7 +140,6 @@ w('字段: %s' % keys)
 w('样例: %s' % json.dumps(ms['items'][0], ensure_ascii=False)[:400])
 w('norm 键: %s' % sorted({k for x in ms['items'] for k in x.get('norm', {}).keys()}))
 
-os.makedirs(os.path.dirname(OUT), exist_ok=True)
 with io.open(OUT, 'w', encoding='utf-8') as f:
     f.write('\n'.join(lines))
 print('written', OUT, len(lines), 'lines')

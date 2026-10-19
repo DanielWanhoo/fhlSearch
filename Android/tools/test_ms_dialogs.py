@@ -9,7 +9,7 @@ r"""名士检索：三个窗口是否都在屏幕正中。
 判定：卡片根节点（id=cardRoot）的中心与屏幕中心之差。
 带输入法的输入面板会被系统上抬以避开键盘，那种情况只校验"水平居中 + 完全在屏幕内"。
 
-用法：python tools\test_ms_dialogs.py [设备]
+用法：python _analysis\test_ms_dialogs.py [设备]
 """
 import io
 import os

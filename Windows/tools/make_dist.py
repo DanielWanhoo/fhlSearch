@@ -9,7 +9,7 @@
 
 用法: python tools/make_dist.py
 """
-import sys, io, os, shutil, subprocess, datetime
+import sys, io, os, re, shutil, subprocess, datetime
 
 # 输出跟随系统编码（中文 Windows 的 cmd 是 GBK），只把编不出来的字符降级，避免抛异常。
 # 需要强制 UTF-8 时，设环境变量 PYTHONIOENCODING=utf-8。
@@ -129,7 +129,16 @@ def main():
         with open(DOC_SRC, encoding="utf-8") as f:
             doc = f.read()
         doc = doc.replace("\n---\n", "\n" + "-" * 60 + "\n")
-        doc = doc.replace("## ", "■ ").replace("# ", "")
+        # 标题转成纯文本标记：#1 去掉井号，#2~#3 用 ■，#4 及以下用缩进的 ·（子小节）
+        doc = re.sub(r"^#{2,3} ", "■ ", doc, flags=re.M)
+        doc = re.sub(r"^#{4,6} ", "    · ", doc, flags=re.M)
+        doc = re.sub(r"^#+ ", "", doc, flags=re.M)
+        # 引用块去掉 "> " 前缀（纯文本里没有引用这回事）
+        doc = re.sub(r"^> ?", "", doc, flags=re.M)
+        # 图片语法转成一句人话：纯 txt 里放不了图，指引去程序里看
+        doc = re.sub(r"!\[([^\]]*)\]\([^)]+\)",
+                     lambda m: "【" + (m.group(1) or "图") + "：在程序里点「使用说明」→「查看截图样例」可看到原图】",
+                     doc)
         doc = doc.replace("**", "").replace("| ", "  ").replace(" |", "  ")
         doc = doc.replace("`", "")
         head = ("忘川检索 fhlSearch 使用说明\n"
