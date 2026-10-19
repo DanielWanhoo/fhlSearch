@@ -65,17 +65,42 @@ git push -u origin main
 ```bash
 cd H:\projects\fhlSearch_github
 git config http.sslBackend openssl
-git config http.sslCAInfo "C:/Users/wtswg/.workbuddy/system-ca-bundle.pem"
+git config http.sslCAInfo "C:/Users/wtswg/.workbuddy/system-ca-bundle-combined.pem"
+```
+
+**关于那个合并 CA 包**：原来指向的 `system-ca-bundle.pem`（39 张证书）到 v3 推送时已不够用，
+会报 `unable to get local issuer certificate (20)`。改成"Windows 证书存储 + 原 Mozilla 包"的合并版
+（220 张、约 353 KB）后正常。重建命令（**留着备用，换机器/证书过期时重跑**）：
+
+```powershell
+$sb = New-Object System.Text.StringBuilder
+foreach ($store in 'Cert:\LocalMachine\Root','Cert:\LocalMachine\CA','Cert:\CurrentUser\Root','Cert:\CurrentUser\CA') {
+    foreach ($c in Get-ChildItem $store) {
+        [void]$sb.AppendLine('-----BEGIN CERTIFICATE-----')
+        [void]$sb.AppendLine([Convert]::ToBase64String($c.RawData,'InsertLineBreaks'))
+        [void]$sb.AppendLine('-----END CERTIFICATE-----')
+    }
+}
+$combined = $sb.ToString() + "`n" + (Get-Content 'C:\Users\wtswg\.workbuddy\system-ca-bundle.pem' -Raw)
+[System.IO.File]::WriteAllText('C:\Users\wtswg\.workbuddy\system-ca-bundle-combined.pem',
+    $combined, (New-Object System.Text.UTF8Encoding($false)))
 ```
 
 注意：`http.schannelCheckRevoke=false` 对本机代理**无效**，别在这上面浪费时间。
-若换网络后仍报证书错误，把上面 `sslCAInfo` 指向包含系统根与 Mozilla 根证书的合并 pem 即可。
+
+另外这台机器**链路抖动很厉害**：`Recv failure: Connection was reset`、`Could not connect to server`
+会随机出现（和证书无关）。**原样重试 2~6 次通常就成功**，不必改任何配置 ——
+本次推 `main` 试了 2 次、推 `v3.1.0` 标签试了 4 次才过。若重试仍失败，先 `git ls-remote --heads origin`
+确认连通，再推。
 
 ---
 
 ## 三、发一个 Release，把安装包挂上去
 
 ### ✅ 当前要发的版本：v3.1.0
+
+> **当前状态**：代码已推到 `origin/main`（`a4ccad5`），附注标签 `v3.1.0` 也已创建并推送。
+> **剩下的只有网页上发 Release** —— 即下面「发版步骤」的第 3、4 步。
 
 | 附件 | 大小 | 取自 |
 | --- | --- | --- |
