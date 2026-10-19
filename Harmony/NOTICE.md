@@ -38,6 +38,13 @@
 
 程序图标是自行绘制的朱砂圆印（`docs/icons/` 里有设计方案与导出件），非游戏素材。
 
+程序内「信息」页里有两张**说明用的样图**（`entry/src/main/resources/base/media/help_poetry_*.jpg`）：
+
+- `help_poetry_result` —— 本程序自身界面的截图；
+- `help_poetry_grid` —— 用本程序自己的配色**绘制**的 6×5 字格示意图（不是游戏截图）。
+
+两张图仅用于说明用法，不参与任何检索逻辑。
+
 ## 4. 本程序不做什么
 
 - **不联网**：`module.json5` 里没有申请 `ohos.permission.INTERNET`，物理上无法联网

@@ -99,7 +99,7 @@ export struct GridCell {
         .onBlur(() => {
           this.isFocused = false
         })
-        .animation({ duration: 150, curve: Curve.EaseOut })
+        // 不放隐式动画：30 个格子的输入框每次刷新都挂一遍隐式动画，切页/整表刷新会连带动画重排
         .id(`grid-${this.cell.row}-${this.cell.col}`)
         .onKeyEvent((event: KeyEvent) => {
           if (event.type !== KeyType.Down) {

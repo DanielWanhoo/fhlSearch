@@ -5,6 +5,7 @@ import { IdiomInputCell } from '../../components/IdiomInputCell'
 import { IdiomResultCard } from '../../components/IdiomResultCard'
 import { GlassButton } from '../../components/GlassButton'
 import { SplitDivider } from '../../components/SplitDivider'
+import { InfoButton } from '../../components/InfoButton'
 import { KeyCode } from '@kit.InputKit'
 
 /**
@@ -49,6 +50,19 @@ export struct IdiomSearchPage {
       return '输入每字声调（1~4），如 4 4 2 1，留空表示任意'
     }
     return '输入每字汉字，如 暗 渡 陈 仓，留空表示任意'
+  }
+
+  /**
+   * 首次显示前先取真实窗口宽（Index 已发布到 AppStorage）
+   *
+   * 否则会「按 0 排一遍 → onAreaChange 改成真实宽度 → 再整页重排一遍」，
+   * 首次切到本页时这一下正好卡在切页动画里，看着就是掉帧。
+   */
+  aboutToAppear(): void {
+    const w: number | undefined = AppStorage.get<number>('winWidth')
+    if (w !== undefined && w > 0) {
+      this.windowWidth = w
+    }
   }
 
   // ==================== 业务逻辑 ====================
@@ -133,6 +147,11 @@ export struct IdiomSearchPage {
       Text(`检索 ${this.searchCount} 次`)
         .fontSize(12)
         .fontColor($r('app.color.text_secondary'))
+
+      Blank(8)
+
+      // 大标题右侧的「信息」按钮：应用说明与使用方法（三个检索页共用同一个对话框）
+      InfoButton()
     }
     .width('100%')
     .alignItems(VerticalAlign.Center)
@@ -481,7 +500,11 @@ export struct IdiomSearchPage {
       return false
     })
     .onAreaChange((oldArea: Area, newArea: Area) => {
-      this.windowWidth = newArea.width as number
+      const w: number = newArea.width as number
+      if (Math.abs(w - this.windowWidth) < 0.5) {
+        return   // 面积没真变（切页签、弹出层都会触发一次）：直接返回，省一次整页重建
+      }
+      this.windowWidth = w
     })
   }
 }

@@ -2,8 +2,8 @@
   "app": {
     "bundleName": "com.example.culturalsearch",
     "vendor": "example",
-  "versionCode": 2000000,
-  "versionName": "2.0.0",
+  "versionCode": 3000000,
+  "versionName": "3.0.0",
     "buildVersion": "1",
     "icon": "$media:layered_image",
     "label": "$string:app_name"

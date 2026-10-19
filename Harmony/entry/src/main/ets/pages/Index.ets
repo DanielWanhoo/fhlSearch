@@ -5,6 +5,7 @@ import { SymbolGlyphModifier, window } from '@kit.ArkUI'
 import { hilog } from '@kit.PerformanceAnalysisKit'
 import { HdsAnimationMode, HdsTabs, HdsTabsController, HdsTabsFloatingStyle } from '@kit.UIDesignKit'
 import { MaterialUtil } from '../common/MaterialUtil'
+import { Haptics } from '../common/Haptics'
 
 interface DockTab {
   label: string
@@ -37,7 +38,8 @@ interface DockTab {
  * - 「光感」底衬：页签栏浮起的空档处铺一层暖色光晕（`dock_glow` 渐变），玻璃材质折射这层光后
  *   形成可见的光感（纯底色上玻璃几乎看不见）
  *
- * 注：旧版手写 Dock（Stack 叠加隐藏 Tabs + backgroundBlurStyle 模糊）已由本组件取代。
+ * 注：旧版手写 Dock（Stack 叠加隐藏 Tabs + backgroundBlurStyle 模糊）已由本组件取代；
+ * 旧实现见 dev-logs/backup-2026-09-10/Index.ets。
  */
 
 @Entry
@@ -52,6 +54,8 @@ struct Index {
   @State mingziUndoCmd: number = 0   // 名士页「返回上一级检索」指令（返回手势触发）
   @StorageProp('bottomInset') @Watch('onBottomInsetChange') bottomInset: number = 0  // 系统导航条高度（vp），页签栏离底避让
   private controller: HdsTabsController = new HdsTabsController()      // 竖屏：底部悬浮页签栏
+  // 滚动回调提成字段：每帧都传给三个检索页，现造箭头函数会让子组件每次 build 都拿到“新参数”
+  private scrollHandler: (y: number) => void = (y: number) => { this.onPageScroll(y) }
   private isBarHidden: boolean = false  // 页签栏是否已随滚动收起
   private readonly dockTabs: DockTab[] = [
     { label: '成语检索', symbol: $r('sys.symbol.book') },
@@ -105,18 +109,29 @@ struct Index {
 
   // 页签样式：图标（未选中辅色 / 选中主色，均为 base-dark 成对资源）+ 文字，
   // 颜色由系统页签栏按选中态切换，随系统深浅色自动取值。
+  //
+  // ⚠️ 性能：这三个样式对象**只建一次**。早先是每次 build() 现造（切页签 → currentIndex 变化
+  // → 整个 build 重跑 → 新建 3 个 BottomTabBarStyle + 6 个 SymbolGlyphModifier），
+  // 系统页签栏会当成「样式变了」重新配置一遍，切页时正好卡在动画里，表现就是掉帧。
+  private tabStyles: BottomTabBarStyle[] = []
+
   private tabBarStyle(index: number): BottomTabBarStyle {
-    const tab = this.dockTabs[index]
-    return new BottomTabBarStyle({
-      normal: new SymbolGlyphModifier(tab.symbol)
-        .fontColor([$r('app.color.text_secondary')]),
-      selected: new SymbolGlyphModifier(tab.symbol)
-        .fontColor([$r('app.color.primary')])
-    }, tab.label)
-      .labelStyle({
-        unselectedColor: $r('app.color.text_secondary'),
-        selectedColor: $r('app.color.primary')
-      })
+    if (this.tabStyles.length === 0) {
+      for (let i = 0; i < this.dockTabs.length; i++) {
+        const tab = this.dockTabs[i]
+        this.tabStyles.push(new BottomTabBarStyle({
+          normal: new SymbolGlyphModifier(tab.symbol)
+            .fontColor([$r('app.color.text_secondary')]),
+          selected: new SymbolGlyphModifier(tab.symbol)
+            .fontColor([$r('app.color.primary')])
+        }, tab.label)
+          .labelStyle({
+            unselectedColor: $r('app.color.text_secondary'),
+            selectedColor: $r('app.color.primary')
+          }))
+      }
+    }
+    return this.tabStyles[index]
   }
 
   // 确保页签栏处于显示状态（平板常驻 / 从收起态恢复时调用）
@@ -198,7 +213,23 @@ struct Index {
   }
 
   // 悬浮页签栏样式：系统沉浸光感材质 + 避让底部手势条 + 跟随握持手 + 按断点自适应胶囊宽度
+  //
+  // ⚠️ 性能：这个对象同样**缓存**。它里面带系统材质（沉浸光感）与渐变遮罩，每次 build() 现造的话，
+  // 切页签时系统会重新配置整条玻璃页签栏（材质重置 + 遮罩重建），一帧就撑不住了。
+  // 只有它真正的输入（宽屏与否 / 手势条高度 / 窗口宽 / 分栏比例）变了才重建。
+  private barStyle: HdsTabsFloatingStyle = {}
+  private barStyleKey: string = ''
+
   private floatingStyle(): HdsTabsFloatingStyle {
+    const key: string = `${this.isWide}|${this.bottomInset}|${Math.round(this.windowWidth)}|${this.splitRatio.toFixed(3)}`
+    if (this.barStyleKey !== key) {
+      this.barStyleKey = key
+      this.barStyle = this.buildFloatingStyle()
+    }
+    return this.barStyle
+  }
+
+  private buildFloatingStyle(): HdsTabsFloatingStyle {
     return {
       // 手机用系统默认宽度（居中、比例由 HDS 规范给出，实测约屏宽 65%，与两侧留白协调）；
       // 中大屏用固定宽度（避免平板上一颗小胶囊挤在屏幕中间），但**不超过左栏宽度**——
@@ -221,58 +252,71 @@ struct Index {
     }
   }
 
-  // 三个检索页（横竖屏共用，避免两份 TabContent 重复）
+  /**
+   * 三个检索页（横竖屏共用，避免两份 TabContent 重复）
+   *
+   * ⚠️ 性能：几何补偿用的两层 Column + translate **只在宽屏才加**。
+   * 手机上「页签栏布局盒」就是整屏，补偿量恒为 0，那两层容器和一个 transform 层纯属浪费 ——
+   * 切页时整页会作为独立图层反复重绘，手机上就是这个最吃帧。
+   */
   @Builder
   TabsContent() {
     TabContent() {
-      // 外层 Column 只做「几何补偿」：固定窗口宽 + 右移，抵掉页签栏布局盒的左伸（见 barBoxWidth 注释）
-      // 外层铺满「页签栏布局盒」（宽屏时盒比屏幕宽，用 100% 才不会被居中偏移）
-      Column() {
-        // 内层固定窗口宽：从盒左边缘右移 contentShift，屏幕坐标恒为 [0, W]，页面按窗口宽排版
+      if (this.isWide) {
+        // 宽屏：外层铺满「页签栏布局盒」，内层固定窗口宽 + 右移补回屏幕坐标（见 barBoxWidth 注释）
         Column() {
-          IdiomSearchPage({ undoCmd: this.idiomUndoCmd, onScrollOffset: (y: number) => { this.onPageScroll(y) } })
+          Column() {
+            IdiomSearchPage({ undoCmd: this.idiomUndoCmd, onScrollOffset: this.scrollHandler })
+          }
+          .width(this.contentWidth())
+          .height('100%')
+          .translate({ x: this.contentShift() })
         }
-        .width(this.contentWidth())
+        .width('100%')
         .height('100%')
-        .translate({ x: this.contentShift() })
+        .alignItems(HorizontalAlign.Start)
+      } else {
+        // 手机：整屏即窗口，直接放页面
+        IdiomSearchPage({ undoCmd: this.idiomUndoCmd, onScrollOffset: this.scrollHandler })
       }
-      .width('100%')
-      .height('100%')
-      .alignItems(HorizontalAlign.Start)
     }
     .tabBar(this.tabBarStyle(0))
 
     TabContent() {
-      // 外层铺满「页签栏布局盒」（宽屏时盒比屏幕宽，用 100% 才不会被居中偏移）
-      Column() {
-        // 内层固定窗口宽：从盒左边缘右移 contentShift，屏幕坐标恒为 [0, W]，页面按窗口宽排版
+      if (this.isWide) {
         Column() {
-          PoetrySearchPage({ clearCmd: this.poetryClearCmd, onScrollOffset: (y: number) => { this.onPageScroll(y) } })
+          Column() {
+            PoetrySearchPage({ clearCmd: this.poetryClearCmd, onScrollOffset: this.scrollHandler })
+          }
+          .width(this.contentWidth())
+          .height('100%')
+          .translate({ x: this.contentShift() })
         }
-        .width(this.contentWidth())
+        .width('100%')
         .height('100%')
-        .translate({ x: this.contentShift() })
+        .alignItems(HorizontalAlign.Start)
+      } else {
+        PoetrySearchPage({ clearCmd: this.poetryClearCmd, onScrollOffset: this.scrollHandler })
       }
-      .width('100%')
-      .height('100%')
-      .alignItems(HorizontalAlign.Start)
     }
     .tabBar(this.tabBarStyle(1))
 
     TabContent() {
-      // 外层铺满「页签栏布局盒」（宽屏时盒比屏幕宽，用 100% 才不会被居中偏移）
-      Column() {
-        // 内层固定窗口宽：从盒左边缘右移 contentShift，屏幕坐标恒为 [0, W]，页面按窗口宽排版
+      if (this.isWide) {
         Column() {
-          MingziSearchPage({ undoCmd: this.mingziUndoCmd, onScrollOffset: (y: number) => { this.onPageScroll(y) } })
+          Column() {
+            MingziSearchPage({ undoCmd: this.mingziUndoCmd, onScrollOffset: this.scrollHandler })
+          }
+          .width(this.contentWidth())
+          .height('100%')
+          .translate({ x: this.contentShift() })
         }
-        .width(this.contentWidth())
+        .width('100%')
         .height('100%')
-        .translate({ x: this.contentShift() })
+        .alignItems(HorizontalAlign.Start)
+      } else {
+        MingziSearchPage({ undoCmd: this.mingziUndoCmd, onScrollOffset: this.scrollHandler })
       }
-      .width('100%')
-      .height('100%')
-      .alignItems(HorizontalAlign.Start)
     }
     .tabBar(this.tabBarStyle(2))
   }
@@ -286,8 +330,11 @@ struct Index {
         this.TabsContent()
       }
       .barOverlap(true)
-      .scrollable(!this.isWide)   // 平板横屏禁用左右滑动切页，避免与分栏分隔条拖动冲突
-      .animationDuration(300)
+      // ⚠️ 自带的「左右滑动切页」关掉（原因见下面的 PanGesture）：
+      // 它的拖动过渡会把整页做成带透视的斜切/缩放，慢拖时画面又歪又抖 —— 这就是用户反馈的「一顿一顿」。
+      // 现在改为「自己的横向手势 → 改 currentIndex」，走的是点页签那条干净的横向滑动过渡。
+      .scrollable(false)
+      .animationDuration(220)   // 切页滑动时长：300 → 220，缩短「整页在动」的高开销窗口
       .barBackgroundColor(Color.Transparent)
       .barFloatingStyle(this.floatingStyle())
       // 平板：布局盒整体加宽并左移，让盒中心 = 左栏中心（页签栏随之居中于左栏）；
@@ -297,16 +344,41 @@ struct Index {
       .margin({ left: this.barBoxOffset() })
       .clip(false)
       .onChange((index: number) => {
-        // 仅同步 currentIndex：切页（点页签栏 / 左右滑动）由 HdsTabs 内部驱动
+        // 仅同步 currentIndex（点页签栏、或下面的手势改 currentIndex 都会走到这里）
         this.currentIndex = index
       })
+      // 手机上的「左右滑动切页」：只认横向、够 60vp 才切，切页走点页签那套干净过渡。
+      // 平板不加（左右两栏 + 分栏分隔条，滑动容易误触）。
+      .gesture(
+        PanGesture({ direction: PanDirection.Horizontal, distance: 30 })
+          .onActionEnd((event: GestureEvent) => {
+            if (this.isWide) {
+              return
+            }
+            const dx: number = event.offsetX
+            if (Math.abs(dx) < 60) {
+              return
+            }
+            const next: number = dx < 0 ? this.currentIndex + 1 : this.currentIndex - 1
+            if (next >= 0 && next < this.dockTabs.length && next !== this.currentIndex) {
+              Haptics.tick()
+              this.currentIndex = next
+            }
+          })
+      )
     }
     .width('100%')
     .height('100%')
     .alignItems(HorizontalAlign.Start)
     .backgroundColor($r('app.color.background'))
     .onAreaChange((oldArea: Area, newArea: Area) => {
-      this.windowWidth = newArea.width as number
+      const w: number = newArea.width as number
+      if (Math.abs(w - this.windowWidth) < 0.5) {
+        return   // 面积没真变（切页签、弹出层都会触发一次）：直接返回，别让整页重算
+      }
+      this.windowWidth = w
+      // 发布给三个检索页：它们首次显示时先拿到真实宽度，就不用「先按 0 排一遍再重排一遍」
+      AppStorage.setOrCreate<number>('winWidth', w)
       const wide: boolean = this.windowWidth > 600
       if (wide && !this.isWide) {
         // 竖屏（会随滚动收起）切到平板双栏（常驻）→ 立刻把页签栏浮出来

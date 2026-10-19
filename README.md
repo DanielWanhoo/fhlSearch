@@ -2,7 +2,7 @@
 
 《忘川风华录》「山石雅集」与「众里寻他」三类检索题的**离线查询小工具**。
 
-**当前版本：Windows 3.1.0 · Android 3.1 · HarmonyOS 2.0.0**
+**当前版本：Windows 3.1.0 · Android 3.1 · HarmonyOS 3.0.0**
 
 按平台分目录存放，目前有：
 
@@ -20,7 +20,8 @@
 | 平台 | 实现 | 系统要求 |
 | --- | --- | --- |
 | Windows | Windows 自带 OCR（`Windows.Media.Ocr`） | **Windows 10 (1809) 及以上** + 简体中文 OCR 组件 |
-| Android | Google ML Kit 文字识别 | Android 10 及以上（识别模型随 apk 或首次使用时下载） |
+| Android | Google ML Kit 文字识别 | Android 10 及以上（中文识别模型已内嵌在 apk 里，无需联网下载） |
+| HarmonyOS | 系统 Core Vision Kit 文字识别（`@kit.CoreVisionKit`） | HarmonyOS NEXT（API 24 / 6.1.1）；识别在本机完成、不联网 |
 
 > 低版本系统上这个按钮会提示不可用，**其余功能完全不受影响**，汉字照样可以手打。
 
@@ -34,7 +35,7 @@
 | --- | --- | --- |
 | Windows | **[`Windows/dist/fhlSearch.exe`](Windows/dist/fhlSearch.exe)** | 双击就能用。不联网、不写注册表、不需要安装。Win7 需要系统已装 .NET Framework 4.0+，Win10 / Win11 系统自带。诗词「从图片识别」需 Win10 1809+ |
 | Android | **[`Android/dist/fhlSearch.apk`](Android/dist/fhlSearch.apk)** | 传到手机 / 平板点一下安装（需允许「安装未知应用」）。不联网、不要任何权限，Android 10 及以上 |
-| HarmonyOS | **[`Harmony/dist/fhlSearch.hap`](Harmony/dist/fhlSearch.hap)**（**未签名**，约 1 MB） | **不能直接点开安装**，必须侧载（见下）。HarmonyOS NEXT（API 24 / 6.1.1）手机与平板。**鸿蒙版暂无图片识别** |
+| HarmonyOS | **[`Harmony/dist/fhlSearch.hap`](Harmony/dist/fhlSearch.hap)**（**未签名**，约 1.4 MB） | **不能直接点开安装**，必须侧载（见下）。HarmonyOS NEXT（API 24 / 6.1.1）手机与平板；v3.0 起支持「从图片识别」（用系统自带文字识别，本地完成） |
 
 ### HarmonyOS 版：未签名 hap 需要侧载
 
@@ -55,6 +56,10 @@ Windows 的 exe、Android 的 apk 都是双击/点一下就能装，**HarmonyOS 
 | --- | --- | --- |
 | ![成语检索](Windows/docs/screenshots/01-idiom.png) | ![成语检索](Android/docs/screenshots/01-idiom.png) | ![成语检索](Harmony/docs/screenshots/01-idiom.png) |
 
+| Windows 识图 | Android 识图 | HarmonyOS 识图 |
+| --- | --- | --- |
+| ![识图填字](Windows/docs/screenshots/07-ocr-sample.jpg) | ![识图填字](Android/docs/screenshots/10-ocr.png) | ![识图填字](Harmony/docs/screenshots/08-ocr.png) |
+
 ---
 
 ## 它做什么
@@ -63,7 +68,7 @@ Windows 的 exe、Android 的 apk 都是双击/点一下就能装，**HarmonyOS 
 
 - **成语检索**（山石雅集第 14 题）—— 319 条成语，按拼音 / 声调 / 单字查，命中位置标绿
 - **诗词检索**（山石雅集第 15 题）—— 282 条五言诗句，6×5 字格填字，自动拼出能组成的诗句；
-  **可从截图自动识别填格**（Windows / Android）
+  **可从截图自动识别填格**（三端均支持）
 - **名士检索**（众里寻他）—— 115 位名士，9 种条件（朝代 / 爱好 / 社团 / 品阶 / 职业 …）筛选
 
 「检索」与「二次检索」是一对动作按钮：先在全库里查，出了结果之后就用「二次检索」

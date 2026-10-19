@@ -16,8 +16,10 @@
 > ⚠️ **HarmonyOS 版发的是未签名 hap**：在 `Harmony/dist/fhlSearch.hap`。
 > 华为装包必须签名，所以它不是"点开即装"，用户得用**小白调试助手 / DevEco Studio** 之类的工具侧载，
 > 并自备华为开发者账号（官网自行认证）+ 设备开开发者模式 —— 具体说明写在各 README 里，别再改回"不放安装包"。
-> 另外：这个 hap 是用 `H:\projects\CulturalSearch` 的构建产物复制的（同 bundleName / 同版本），
-> 以后重新出包记得同步替换。
+> 另外：这个 hap 是 `H:\projects\CulturalSearch` 出包后复制的（同 bundleName，当前版本 **3.0.0**，
+> 与 `entry-default-unsigned.hap` 同 MD5）。已比对过：其源码与仓库内 `Harmony/` **逐字节一致**
+> （30 个 `.ets` / 12 个资源 / 5 个 `AppScope` 文件全部相同），可放心对应。
+> 每次重新出包记得同步替换 `Harmony/dist/fhlSearch.hap`。
 
 ---
 
@@ -79,9 +81,9 @@ git config http.sslCAInfo "C:/Users/wtswg/.workbuddy/system-ca-bundle.pem"
 | --- | --- | --- |
 | `fhlSearch.exe` | 0.30 MB | `Windows/dist/fhlSearch.exe` |
 | `fhlSearch.apk` | 44.3 MB | `Android/dist/fhlSearch.apk` |
-| `fhlSearch.hap`（**未签名**，需侧载） | 1.02 MB | `Harmony/dist/fhlSearch.hap`（鸿蒙版仍是 2.0.0，暂无图片识别） |
+| `fhlSearch.hap`（**未签名**，需侧载） | 1.38 MB | `Harmony/dist/fhlSearch.hap`（鸿蒙版 3.0.0，v3 起也支持图片识别） |
 
-三端版本：**Windows 3.1.0 · Android 3.1 · HarmonyOS 2.0.0**。
+三端版本：**Windows 3.1.0 · Android 3.1 · HarmonyOS 3.0.0**。
 
 **v3.1 更新说明（可直接粘到 Release 描述）**：
 
@@ -92,6 +94,7 @@ git config http.sslCAInfo "C:/Users/wtswg/.workbuddy/system-ca-bundle.pem"
 
 - Windows：使用系统自带 OCR，需要 Windows 10 (1809) 及以上 + 简体中文 OCR 组件
 - Android：使用 ML Kit 文字识别
+- HarmonyOS：使用系统 Core Vision Kit 文字识别（设备本地完成、不上传图片、不用申请相机/相册权限）
 - 低版本系统上该按钮提示不可用，其余功能不受影响
 
 ## 识别率优化（v3.1）
@@ -109,7 +112,7 @@ git config http.sslCAInfo "C:/Users/wtswg/.workbuddy/system-ca-bundle.pem"
 发版步骤：
 
 1. 先按第四节把改动提交、推上去
-2. `git tag -a v3.1.0 -m "Windows 3.1.0 / Android 3.1 / HarmonyOS 2.0.0"` → `git push origin v3.1.0`
+2. `git tag -a v3.1.0 -m "Windows 3.1.0 / Android 3.1 / HarmonyOS 3.0.0"` → `git push origin v3.1.0`
 3. 网页：仓库右侧 **Releases** → **Draft a new release** → 选刚推的 `v3.1.0` 标签 →
    标题 `v3.1.0`、描述粘上面那段 → 三个产物拖进 **Attach binaries** → **Publish release**
 4. 发完把本文件第三节顶部的版本号改成新的（留作下次对照）
@@ -182,7 +185,7 @@ HarmonyOS 版用 DevEco Studio 打开 `Harmony/`，或按 `Harmony/README.md` �
   正常应该只看到 `Android/keystore.properties.example`（那只是示例，不含口令）
 - [x] **内部开发资料没有入库**：`Harmony/dev-logs/`（逐日日志、旧源码备份、开发截图）
       与 `Harmony/CLAUDE.md`（AI 协作说明）已在 `Harmony/.gitignore` 里排除，确认没有手滑 `git add -f`
-- [x] 打开仓库首页，确认**三端** README 的图片都能正常显示（本地 20 处图片引用全部可解析）
+- [x] 打开仓库首页，确认**三端** README 的图片都能正常显示（本地 31 处图片引用全部可解析）
 - [ ] 如果要改协议，记得同步 `LICENSE`（根目录）与
       `Windows/LICENSE`、`Android/LICENSE`、`Harmony/LICENSE` ——
       四份的 MIT 正文必须一致，各端那份末尾的「覆盖哪些目录」说明要跟本端目录结构对得上
@@ -200,11 +203,12 @@ HarmonyOS 版用 DevEco Studio 打开 `Harmony/`，或按 `Harmony/README.md` �
       `Windows/docs/screenshots/07-ocr-sample.jpg`
 - [x] `Windows/docs/screenshots/07-ocr-sample.jpg` 与 `Windows/README.md`、`Windows/docs/使用说明.md`
       里的图片引用路径对得上（README 用 `docs/screenshots/`，使用说明用 `screenshots/`）
-- [x] 三端 README 的「系统要求」已按 v3 更新：Windows 图片识别需 Win10 1809+，
-      鸿蒙版暂无图片识别
+- [x] 三端 README 的「系统要求」已按 v3 更新：Windows 图片识别需 Win10 1809+ + 简体中文 OCR 组件；
+      Android 需 Android 10+（ML Kit）；鸿蒙版用系统 Core Vision Kit（API 24 / 6.1.1，本地识别、不联网）
 - [ ] **提交历史待整理（可选）**：`6bda678` 这个提交标题写的是「Android v3.0」，
       但里面同时包含**全部 Windows v3.0/v3.1 改动**（`Windows/` 下 16 个文件 + exe）。
-      内容没错，只是提交信息读起来像"只动了安卓"。若在意历史整洁，可在推送前重排：
+      内容没错，只是提交信息读起来像"只动了安卓"。当前有 **4 个提交未推送**
+      （`git log --oneline origin/main..HEAD`）。若在意历史整洁，可在推送前重排：
 
       ```bash
       cd H:\projects\fhlSearch_github
@@ -213,11 +217,13 @@ HarmonyOS 版用 DevEco Studio 打开 `Harmony/`，或按 `Harmony/README.md` �
       git commit -m "Windows v3.0/v3.1：诗词图片识别 + 识别率优化 + Arm 说明"
       git add Android                      # 再提交 Android v3
       git commit -m "Android v3.0/v3.1：ML Kit 图片识别 + 识别率优化"
-      git add -A                           # 剩下的（根 README / 本文件）
-      git commit -m "文档：补充 v3.1 发布说明"
+      git add Harmony                      # 再提交 HarmonyOS v3
+      git commit -m "HarmonyOS v3.0：识图填字 + 信息页 + 版本号 3.0.0"
+      git add -A                           # 剩下的（根 README / 本文件 / 文档）
+      git commit -m "文档：补充 v3 发布说明"
       ```
 
-      > 这 2 个提交**还没推送**，所以重排是安全的；万一操作失误可以用 `git reflog` 找回。
+      > 这些提交**还没推送**，所以重排是安全的；万一操作失误可以用 `git reflog` 找回。
 
 ---
 

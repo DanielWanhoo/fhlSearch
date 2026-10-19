@@ -83,6 +83,10 @@
     {
       "name": "nav_glow",
       "value": "#26C95A4A"
+    },
+    {
+      "name": "scrim",
+      "value": "#8C000000"
     }
   ]
 }

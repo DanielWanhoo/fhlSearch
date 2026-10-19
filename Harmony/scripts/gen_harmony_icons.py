@@ -1,6 +1,6 @@
 r"""生成「忘川检索」在 HarmonyOS 工程里使用的图标资源。
 
-与 H:\workarea\fhlSearch\图标 那套导出图**同源**：同一组绘制参数
+与 docs/icons/ 里那套导出图**同源**：同一组绘制参数
 （朱砂竖向渐变 + 描金双圈 + 楷体竖排「忘川」），只是按 HarmonyOS 的形态与尺寸重画：
 
     AppScope/resources/base/media/foreground.png        512x512    分层图标·前景（内容收在安全区）

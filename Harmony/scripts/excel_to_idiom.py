@@ -46,7 +46,7 @@ def resolve_excel(file_name, *legacy_paths):
     return candidate  # 都不存在时返回仓库内路径，报错信息更直白
 
 # 源题库 Excel 路径
-EXCEL_PATH = resolve_excel("成语检索.xlsx", r"C:\Users\wtswg\Desktop\成语检索.xlsx")
+EXCEL_PATH = resolve_excel("成语检索.xlsx")
 
 # 输出路径
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
