@@ -9,6 +9,8 @@ r"""诗词检索「图片识别」回归：把样例图片塞进手机，跑一�
 
 用法：
     python tools\test_ocr.py [设备] [标签]
+
+样例图放在 data\ocr\（自带 test\ 子目录也行，不放也能跑，只是没图可测）。
 """
 import io
 import os
@@ -126,10 +128,11 @@ def ocr_log():
 
 
 def stats_line():
-    """识别过程的统计行（第一趟/第二趟/最终）"""
+    """识别过程的统计行（每趟识别 / 拼板 / 最终）"""
     out = ocr_log()
     keep = [l.split('FhlOcr : ')[-1].strip() for l in out.splitlines()
-            if any(k in l for k in ('第一趟', '第二趟', '最终', '图片 ', '-> 5x6', '不是 5x6'))]
+            if any(k in l for k in ('趟', '拼板', '最终', '图片 ', '-> 5x6', '不是 5x6',
+                                    '候选选区', '按题库'))]
     return keep
 
 
@@ -163,9 +166,8 @@ def main():
     global allok
     w('== 设备 %s（%s）图片识别回归 ==' % (DEV, TAG))
 
-    sh('run-as %s mkdir -p files/ocr' % PKG)
     imgs = []
-    for folder in ('H:\\\\projects\\\\info\\\\需求\\\\ocr\\\\test', 'H:\\\\projects\\\\info\\\\需求\\\\ocr'):
+    for folder in (os.path.join(_ROOT, 'data', 'ocr', 'test'), os.path.join(_ROOT, 'data', 'ocr')):
         if not os.path.isdir(folder):
             continue
         for fn in sorted(os.listdir(folder)):
@@ -180,6 +182,8 @@ def main():
         or os.path.join(_ROOT, 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk'))
     sh('am start -S -n ' + ACT)
     time.sleep(5)
+    # 建目录要放在 install 之后：包还没装上去时 run-as 会失败，后面逐个 cp 就全是 ENOENT
+    sh('run-as %s mkdir -p files/ocr' % PKG)
     d.tap('诗词检索', by='text', label='导航·诗词')
     time.sleep(1.5)
 

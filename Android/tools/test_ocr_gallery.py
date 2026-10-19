@@ -26,7 +26,7 @@ TAG = sys.argv[2] if len(sys.argv) > 2 else 'phone'
 PKG = 'com.wangchuan.fhlsearch'
 ACT = PKG + '/.MainActivity'
 OUT = os.path.join(_ROOT, '_analysis', 'ocr_gallery_%s.txt') % TAG
-SAMPLE = 'H:\\\\projects\\\\info\\\\需求\\\\ocr\\\\test\\\\IMG_10271.jpg'
+SAMPLE = os.path.join(_ROOT, 'data', 'ocr', 'test', 'IMG_10271.jpg')
 
 os.makedirs(os.path.join(_ROOT, '_analysis'), exist_ok=True)
 sys.path.insert(0, os.path.join(_ROOT, 'tools'))

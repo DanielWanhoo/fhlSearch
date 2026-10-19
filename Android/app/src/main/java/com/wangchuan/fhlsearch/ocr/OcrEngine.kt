@@ -29,7 +29,11 @@ object OcrEngine {
     }
 
     /** 识别一张位图。抛异常表示识别引擎本身出错（模型损坏、内存不足等）。 */
-    suspend fun recognize(bitmap: Bitmap): List<Word> = suspendCancellableCoroutine { cont ->
+    suspend fun recognize(
+        bitmap: Bitmap,
+        /** 拼板里一格的宽度：用来判断"一个 element 里挤了几个字"是否合理 */
+        cellPx: Int = PoemOcr.MONTAGE_CELL,
+    ): List<Word> = suspendCancellableCoroutine { cont ->
         val input = InputImage.fromBitmap(bitmap, 0)
         recognizer.process(input)
             .addOnSuccessListener { text ->
@@ -41,15 +45,23 @@ object OcrEngine {
                             val chars = el.text.filter { isCjk(it) }
                             if (chars.isEmpty()) continue
                             if (chars.length == 1) {
-                                words.add(Word(chars[0].toString(), box.centerX(), box.centerY()))
+                                words.add(
+                                    Word(chars[0].toString(), box.centerX(), box.centerY(), el.confidence)
+                                )
+                                continue
+                            }
+                            val step = box.width().toFloat() / chars.length
+                            if (step < cellPx * 0.72f) {
+                                // 一个字的宽度却被读成好几个字（例如「野」被读成「里予」）：
+                                // 这时候等宽切片会把后面几格的位置全顶歪，所以只保留中心对的这一条，
+                                // 原文整串留着，PoemOcr 会把它当这一格的候选字。
+                                words.add(Word(chars, box.centerX(), box.centerY(), el.confidence))
                                 continue
                             }
                             // 一行多个字被连读：等宽切片，估每个字的位置
-                            val step = box.width().toFloat() / chars.length
-                            val cy = box.centerY()
                             chars.forEachIndexed { i, c ->
                                 val cx = (box.left + step * (i + 0.5f)).toInt()
-                                words.add(Word(c.toString(), cx, cy))
+                                words.add(Word(c.toString(), cx, box.centerY(), el.confidence))
                             }
                         }
                     }

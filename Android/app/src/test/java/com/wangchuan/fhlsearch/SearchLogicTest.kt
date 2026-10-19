@@ -146,6 +146,56 @@ class SearchLogicTest {
         assertEquals(0, ShiciLogic.search(MutableList(30) { "" }, shici).size)
     }
 
+    // ================================================================ 图片识别后的"按题库补救"
+
+    /** 30 格里只在指定位置填字（模拟识别结果） */
+    private fun ocrGrid(filled: Map<Int, String>): List<String> =
+        MutableList(30) { "" }.also { g -> filled.forEach { (i, c) -> g[i] = c } }
+
+    @Test
+    fun `缺一个字时按题库补全`() {
+        // 「气蒸云梦泽」少了「云」：其余 4 个字都在格子里，正常检索查不到
+        val grid = ocrGrid(mapOf(0 to "气", 1 to "蒸", 2 to "梦", 3 to "泽", 4 to "最"))
+        assertEquals(0, ShiciLogic.search(grid, shici).size)
+        val r = ShiciLogic.rescue(grid, List(30) { emptySet() }, shici)
+        assertNotNull("四个字对得上、缺的字唯一，应当补出来", r)
+        assertEquals("气蒸云梦泽", r!!.item.line)
+        assertEquals("4 个字是直接认对的", 4, r.strong)
+        assertEquals("只有 1 格要写字", 1, r.fill.size)
+        assertEquals("这一格原本是空的", 1, r.emptyFill)
+        assertEquals("5 个字要落在 5 个不同的格子里", 5, r.cells.toSet().size)
+    }
+
+    @Test
+    fun `候选字里出现过也能救回来`() {
+        // 本趟这格认成「最」，但另一趟在同一格认出了「云」
+        val grid = ocrGrid(mapOf(0 to "气", 1 to "蒸", 2 to "梦", 3 to "泽", 4 to "最"))
+        val cands = MutableList(30) { emptySet<Char>() }
+        cands[4] = setOf('云', '最')
+        val r = ShiciLogic.rescue(grid, cands, shici)
+        assertNotNull(r)
+        assertEquals("气蒸云梦泽", r!!.item.line)
+        assertEquals("靠候选字命中，只需要把这格改回来", 1, r.fill.size)
+        assertEquals("原本不是空格，不用补", 0, r.emptyFill)
+        assertEquals(5, r.cells.toSet().size)
+    }
+
+    @Test
+    fun `差两个字就不猜`() {
+        // 只对上 3 个字，剩下全靠猜就不能认
+        val grid = ocrGrid(mapOf(0 to "气", 1 to "蒸", 2 to "泽"))
+        assertNull(ShiciLogic.rescue(grid, List(30) { emptySet() }, shici))
+    }
+
+    @Test
+    fun `空格子太多时不猜`() {
+        assertNull(ShiciLogic.rescue(MutableList(30) { "" }, List(30) { emptySet() }, shici))
+        // 只有两格有字
+        assertNull(ShiciLogic.rescue(
+            ocrGrid(mapOf(0 to "气", 1 to "蒸")), List(30) { emptySet() }, shici,
+        ))
+    }
+
     // ================================================================ 名士检索
     @Test
     fun `选项型检索与包含匹配`() {

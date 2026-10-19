@@ -83,6 +83,19 @@ object ChengyuLogic {
 // ==================================================================== 诗词检索
 data class ScHit(val item: ShiciItem, val cells: List<Int>)
 
+/**
+ * "认不准就按题库对一次"的结果：[cells] 是该诗句 5 个字各自落在哪一格（与 [item.chars] 一一对应），
+ * [fill] 是需要写字的格子（原本空着、或认成了别的字），[emptyFill] 是其中原本空着的个数。
+ */
+data class ScRescue(
+    val item: ShiciItem,
+    val cells: List<Int>,
+    val fill: List<Int>,
+    val emptyFill: Int,
+    /** 5 个字里，几格是"直接认对"的 */
+    val strong: Int,
+)
+
 object ShiciLogic {
 
     /**
@@ -125,6 +138,129 @@ object ShiciLogic {
 
         return if (bt(0)) order.toList() else null
     }
+
+    /**
+     * 图片识别专用：30 格填了字、却一条诗句都没命中时的"按题库对一次"。
+     *
+     * 为什么会走到这里：30 格里通常只错/空一两个字，而诗句要求 5 个字全在，
+     * 只要错一个字就查不到。这里改成"哪条诗句的 5 个字最可能就在格子里"：
+     *  - 直接认对的格子算"强命中"（2 分）；
+     *  - 这格几趟识别里出现过这个字，算"弱命中"（1 分）；
+     *  - 空格子算"要补字"（0 分）。
+     *
+     * 只有**最优的一条**（总分 ≥ [MIN_SCORE]，且明显好于第二名）才认，
+     * 否则返回 null —— 宁可提示"没找到"，也不瞎给一条错诗句。
+     */
+    fun rescue(
+        grid: List<String>,
+        candidates: List<Set<Char>>,
+        all: List<ShiciItem>,
+    ): ScRescue? {
+        if (grid.isEmpty()) return null
+        val n = grid.size
+        // 每种字能落在哪些格子：先强命中，再弱命中，最后空格
+        val strongMap = HashMap<Char, MutableList<Int>>()
+        val weakMap = HashMap<Char, MutableList<Int>>()
+        val blanks = ArrayList<Int>()
+        for (i in 0 until n) {
+            val prim = grid.getOrNull(i)?.firstOrNull()
+            if (prim != null) strongMap.getOrPut(prim) { ArrayList() }.add(i) else blanks.add(i)
+            for (c in candidates.getOrNull(i).orEmpty()) {
+                if (c != prim) weakMap.getOrPut(c) { ArrayList() }.add(i)
+            }
+        }
+
+        var top: ScRescue? = null
+        var topScore = -1
+        var topStrong = -1
+        var secondScore = -1
+        var secondStrong = -1
+        for (item in all) {
+            val chars = item.chars.map { it[0] }
+            // 空格子对每个字都是"0 分选项"，取前几个就够了（再多也没用，最多补 1 个字）
+            val blankOpts = blanks.take(chars.size).map { intArrayOf(it, 0) }
+            val opts: Array<List<IntArray>> = Array(chars.size) { k ->
+                val c = chars[k]
+                val out = ArrayList<IntArray>()
+                strongMap[c]?.forEach { out.add(intArrayOf(it, 2)) }
+                weakMap[c]?.forEach { out.add(intArrayOf(it, 1)) }
+                out.addAll(blankOpts)
+                out
+            }
+            val r = bestAssign(opts) ?: continue
+            val score = r.first
+            val cells = r.second
+            var strong = 0
+            for ((k, idx) in cells.withIndex()) {
+                if (grid.getOrNull(idx)?.firstOrNull() == chars[k]) strong++
+            }
+            if (score > topScore || (score == topScore && strong > topStrong)) {
+                if (top != null) {
+                    secondScore = topScore
+                    secondStrong = topStrong
+                }
+                topScore = score
+                topStrong = strong
+                val fill = ArrayList<Int>()
+                var emptyFill = 0
+                for ((k, idx) in cells.withIndex()) {
+                    if (grid.getOrNull(idx)?.firstOrNull() != chars[k]) {
+                        fill.add(idx)
+                        if (grid.getOrNull(idx).isNullOrEmpty()) emptyFill++
+                    }
+                }
+                top = ScRescue(item, cells.toList(), fill, emptyFill, strong)
+            } else if (score > secondScore || (score == secondScore && strong > secondStrong)) {
+                secondScore = score
+                secondStrong = strong
+            }
+        }
+
+        val winner = top ?: return null
+        // 至少 4 个直接认对（8 分），否则不足以说服人
+        if (topScore < MIN_RESCUE_SCORE) return null
+        // 和次优的一条分不开 → 宁可不猜
+        if (secondScore == topScore && secondStrong == topStrong) return null
+        // 要改/补的格子最多 1 个，多了等于替用户编字
+        if (winner.fill.size > 1) return null
+        return winner
+    }
+
+    /**
+     * 5 个字各挑一格（格子不能重复），总分最高的一种挑法。
+     * [opts] 每项是 (格子下标, 分值) 列表；返回 (总分, 每格下标数组)。
+     */
+    private fun bestAssign(opts: Array<List<IntArray>>): Pair<Int, IntArray>? {
+        val size = opts.size
+        if (opts.any { it.isEmpty() }) return null
+        var bestScore = -1
+        val cur = IntArray(size)
+        val bestCells = IntArray(size)
+        val used = HashSet<Int>()
+        var nodes = 0
+
+        fun bt(k: Int, score: Int) {
+            if (nodes++ > 20000) return
+            // 剩下的字全按 2 分算也追不上，剪掉
+            if (score + (size - k) * 2 <= bestScore) return
+            if (k == size) {
+                bestScore = score
+                System.arraycopy(cur, 0, bestCells, 0, size)
+                return
+            }
+            for (o in opts[k]) {
+                if (!used.add(o[0])) continue
+                cur[k] = o[0]
+                bt(k + 1, score + o[1])
+                used.remove(o[0])
+            }
+        }
+        bt(0, 0)
+        return if (bestScore < 0) null else bestScore to bestCells.copyOf()
+    }
+
+    /** 救回来的门槛：4 个直接认对 + 1 个（弱的/补的）＝8 分 */
+    private const val MIN_RESCUE_SCORE = 8
 }
 
 // ==================================================================== 名士检索

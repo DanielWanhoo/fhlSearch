@@ -82,6 +82,12 @@ class ShiciFragment : Fragment(), ResultHost {
     /** 这一轮的格子是不是"图片识别填进去的"（只影响没找到诗句时那句提示） */
     private var cameFromOcr = false
 
+    /**
+     * 上一张图每格的候选字（几趟识别各认出了什么）。
+     * 用户一改格子就清掉——那时候格子已经不是"识别结果"了，再拿候选字去猜就是瞎猜。
+     */
+    private var ocrCandidates: List<Set<Char>> = emptyList()
+
     // ---------------------------------------------------------------- 系统相机 / 相册
 
     /** 拍照：系统相机把照片写进 FileProvider 授权的缓存文件，回来后直接识别 */
@@ -153,6 +159,7 @@ class ShiciFragment : Fragment(), ResultHost {
         b.cond.grid.onCellChanged = {
             // 字格一改动，上次的标亮与结果就不再有效
             cameFromOcr = false
+            ocrCandidates = emptyList()
             if (searched) clearResultsOnly()
         }
 
@@ -260,7 +267,7 @@ class ShiciFragment : Fragment(), ResultHost {
                     showOcrError(res.error)
                     return@launch
                 }
-                applyOcrGrid(res.cells, res.filled)
+                applyOcrGrid(res)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -273,12 +280,15 @@ class ShiciFragment : Fragment(), ResultHost {
     }
 
     /** 把识别结果填进格子，然后立刻检索一次 */
-    private fun applyOcrGrid(cells: CharArray, filled: Int) {
+    private fun applyOcrGrid(res: PoemOcr.Result) {
         val ctx = context ?: return
+        val filled = res.filled
         b.cond.grid.clearAll()
-        cells.forEachIndexed { i, ch ->
+        res.cells.forEachIndexed { i, ch ->
             if (ch != PoemOcr.BLANK) b.cond.grid.setCharAt(i, ch.toString())
         }
+        // 候选字要在填完之后再挂上：填格会触发 onCellChanged，那边会把它清掉
+        ocrCandidates = res.candidates
         cameFromOcr = true
         Toasts.show(
             ctx,
@@ -306,7 +316,7 @@ class ShiciFragment : Fragment(), ResultHost {
             Toasts.show(requireContext(), getString(R.string.tip_tiku_error))
             return
         }
-        val grid = b.cond.grid.allChars()
+        var grid = b.cond.grid.allChars()
         if (grid.all { it.isEmpty() }) {
             Toasts.show(requireContext(), getString(R.string.tip_need_condition))
             return
@@ -315,7 +325,33 @@ class ShiciFragment : Fragment(), ResultHost {
         searchCount++
         updateCountText()
 
-        hits = ShiciLogic.search(grid, all)
+        var found = ShiciLogic.search(grid, all)
+        // 图片识别的"补救"：一条都没命中，多半是有一格认错了/空着。
+        // 拿每格的候选字回题库里对一遍，只有唯一一条明显更合适才用（见 ShiciLogic.rescue）
+        if (found.isEmpty() && cameFromOcr && ocrCandidates.isNotEmpty()) {
+            val r = ShiciLogic.rescue(grid, ocrCandidates, all)
+            if (r != null) {
+                r.item.chars.forEachIndexed { k, ch ->
+                    val idx = r.cells[k]
+                    if (grid.getOrNull(idx) != ch) b.cond.grid.setCharAt(idx, ch)
+                }
+                grid = b.cond.grid.allChars()
+                found = ShiciLogic.search(grid, all)
+                if (found.isNotEmpty()) {
+                    Toasts.show(
+                        requireContext(),
+                        getString(
+                            if (r.fill.isEmpty()) R.string.ocr_rescue_match else R.string.ocr_rescue_fill,
+                            r.item.line,
+                        ),
+                    )
+                    Log.i(TAG_OCR, "按题库补全：" + r.item.line + "（改 " + r.fill.size + " 格）")
+                }
+            }
+            ocrCandidates = emptyList()
+        }
+
+        hits = found
         b.cond.grid.clearHits()
         if (hits.isEmpty()) {
             // 手动填的时候多半是字填错了；从图片识别过来的，更可能是认错了字，

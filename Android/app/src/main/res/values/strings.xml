@@ -57,6 +57,8 @@
     <string name="ocr_no_camera">没有找到可用的相机应用，请改用「相册识别」</string>
     <string name="ocr_failed">识别失败</string>
     <string name="ocr_need_image">没能读到这张图片，请换一张试试</string>
+    <string name="ocr_rescue_fill">识别可能有误：已按题库补上「%1$s」缺的字，请对照截图核对</string>
+    <string name="ocr_rescue_match">识别可能有误：已按题库匹配到「%1$s」，请对照截图核对</string>
 
     <!-- 信息（大标题右边的图标）：软件信息 + 使用方法 -->
     <string name="info_button">信息</string>

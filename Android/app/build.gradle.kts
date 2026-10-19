@@ -24,8 +24,8 @@ android {
         applicationId = "com.wangchuan.fhlsearch"
         minSdk = 29          // 需求硬指标：Android 10
         targetSdk = 37
-        versionCode = 3
-        versionName = "3.0"
+        versionCode = 4
+        versionName = "3.1"
         resourceConfigurations += listOf("zh", "zh-rCN")
 
         // 只打这三种 ABI 的 .so。ML Kit 的中文识别库每个 ABI 都有 10 MB 上下：
