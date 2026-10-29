@@ -8,7 +8,11 @@ import { SearchEngine } from '../../engine/SearchEngine'
 import { POETRY_DB } from '../../data/poetry_db'
 import { InfoButton } from '../../components/InfoButton'
 import { Haptics } from '../../common/Haptics'
-import { OcrOutcome, describeError, isOcrSupported, pickFromCamera, pickFromGallery, recognizeGrid } from '../../service/OcrService'
+import {
+  CropRect, GRID_ASPECT, OcrOutcome, describeError, detectGridRect, imageSize,
+  isOcrSupported, pickFromCamera, pickFromGallery, recognizeCropped
+} from '../../service/OcrService'
+import { image } from '@kit.ImageKit'
 import { KeyCode } from '@kit.InputKit'
 import { common } from '@kit.AbilityKit'
 import { BusinessError } from '@kit.BasicServicesKit'
@@ -39,6 +43,23 @@ export struct PoetrySearchPage {
   @State showOcrSheet: boolean = false   // 「识图」来源选择面板（拍照 / 图库）
   @State isRecognizing: boolean = false  // 识别中：蒙层 + 转圈，期间不接受点击
   @State ocrNote: string = ''            // 识别结果的一行小注（填在标题下方，清空时复位）
+  // ---- 图片预览与裁切（v3.2）----
+  @State cropUri: string = ''            // 待识别图片的 URI（预览 + 裁剪都在它上面做）
+  @State showCrop: boolean = false       // 裁剪面板是否显示
+  @State cropReady: boolean = false      // 自动框选是否算完（算完前盖一层「正在定位字格」）
+  @State imgW: number = 1                // 原图宽（px），用于等比排版与 6:5 换算
+  @State imgH: number = 1                // 原图高（px）
+  @State cropX: number = 0.1             // 裁剪框左上角（相对图片的比例）
+  @State cropY: number = 0.1
+  @State cropW: number = 0.8             // 裁剪框宽（相对整图的比例）
+  @State cropH: number = 0.6             // 裁剪框高（相对整图的比例）—— 比例自由，宽高各存
+  @State boxW: number = 0                // 预览区实际尺寸（vp），onAreaChange 得到
+  @State boxH: number = 0
+  @State previewPm: image.PixelMap | null = null  // 结果区表格下方的图片预览（裁好的字格）
+  private dragStartX: number = 0         // 拖动起点（裁剪框状态快照）
+  private dragStartY: number = 0
+  private dragStartW: number = 0
+  private dragStartH: number = 0
 
   // ==================== 生命周期 ====================
 
@@ -163,6 +184,7 @@ export struct PoetrySearchPage {
     this.results = []
     this.hasSearched = false
     this.ocrNote = ''
+    this.previewPm = null   // 图已换题，旧的识别用图不再展示
   }
 
   // 一键粘贴：去除非汉字符号后，按从左到右、从上到下填入 30 格
@@ -256,7 +278,7 @@ export struct PoetrySearchPage {
     this.showOcrSheet = true
   }
 
-  /** 拍照 → 识别 */
+  /** 拍照 → 打开裁剪面板 */
   private async captureAndRecognize(): Promise<void> {
     this.showOcrSheet = false
     try {
@@ -265,13 +287,13 @@ export struct PoetrySearchPage {
       if (uri.length === 0) {
         return  // 用户取消了拍照
       }
-      await this.runOcr(uri)
+      await this.openCrop(uri)
     } catch (e) {
       this.reportOcrError(e, '打开相机失败')
     }
   }
 
-  /** 图库选图 → 识别 */
+  /** 图库选图 → 打开裁剪面板 */
   private async pickAndRecognize(): Promise<void> {
     this.showOcrSheet = false
     try {
@@ -279,18 +301,169 @@ export struct PoetrySearchPage {
       if (uri.length === 0) {
         return  // 用户取消了选图
       }
-      await this.runOcr(uri)
+      await this.openCrop(uri)
     } catch (e) {
       this.reportOcrError(e, '打开图库失败')
     }
   }
 
-  /** 识别一张图：识别中显示蒙层，完成后填入表格 */
-  private async runOcr(uri: string): Promise<void> {
+  // ---------- 预览 + 裁剪（v3.2）----------
+
+  /**
+   * 打开裁剪面板：先显示整张图，再自动把字格框出来
+   *
+   * 自动框选是在后台跑一次 OCR 定位的，慢的话先让用户看到图（默认框居中 80%），
+   * 算完再把框挪到字格上；用户随时可以用手拖。
+   */
+  private async openCrop(uri: string): Promise<void> {
+    this.cropReady = false
+    this.cropUri = uri
+    this.showCrop = true
+    try {
+      const size = await imageSize(uri)
+      if (size.width > 0 && size.height > 0) {
+        this.imgW = size.width
+        this.imgH = size.height
+      }
+      // 先摆一个居中的默认框（6:5，因为字格本来就是 6 列 × 5 行）
+      this.setCrop(0.5, 0.5, 0.8, 0.8 * this.imgW / (GRID_ASPECT * this.imgH))
+      const rect: CropRect | null = await detectGridRect(uri)
+      if (rect !== null) {
+        this.placeCrop(rect.x, rect.y, rect.width, rect.height)
+      }
+    } catch (e) {
+      // 定位失败不阻断：用默认框让用户自己拖
+      console.warn('detectGridRect failed: ' + JSON.stringify(e))
+    }
+    this.cropReady = true
+  }
+
+  /** 裁剪框高度比例（v3.2.1 起宽高各自独立，比例自由） */
+  private cropHeightRatio(): number {
+    return this.cropH
+  }
+
+  /**
+   * 直接把框放到指定矩形：宽高各自夹到 [0.12, 1]，并整体夹回图内
+   * （v3.2.1 起比例自由，横竖比由用户自己拖出来）
+   */
+  private placeCrop(x: number, y: number, w: number, h: number): void {
+    const cw: number = Math.min(1, Math.max(0.12, w))
+    const ch: number = Math.min(1, Math.max(0.12, h))
+    this.cropW = cw
+    this.cropH = ch
+    this.cropX = Math.min(1 - cw, Math.max(0, x))
+    this.cropY = Math.min(1 - ch, Math.max(0, y))
+  }
+
+  /**
+   * 以中心 + 宽高设定裁剪框（拖动用）
+   * @param cx 中心点横坐标（0~1）
+   * @param cy 中心点纵坐标（0~1）
+   * @param w 宽度（0~1）
+   * @param h 高度（0~1）
+   */
+  private setCrop(cx: number, cy: number, w: number, h: number): void {
+    const cw: number = Math.min(1, Math.max(0.12, w))
+    const ch: number = Math.min(1, Math.max(0.12, h))
+    this.placeCrop(cx - cw / 2, cy - ch / 2, cw, ch)
+  }
+
+  /** 图片在预览区里等比缩放后的尺寸（vp）：外层 Stack 负责居中 */
+  private imgDw(): number {
+    if (this.boxW <= 0 || this.boxH <= 0 || this.imgW <= 0 || this.imgH <= 0) {
+      return 0
+    }
+    const aspect: number = this.imgW / this.imgH
+    if (this.boxW / this.boxH > aspect) {
+      return this.boxH * aspect   // 图更高：高度占满
+    }
+    return this.boxW             // 图更宽：宽度占满
+  }
+
+  private imgDh(): number {
+    if (this.boxW <= 0 || this.boxH <= 0 || this.imgW <= 0 || this.imgH <= 0) {
+      return 0
+    }
+    const aspect: number = this.imgW / this.imgH
+    if (this.boxW / this.boxH > aspect) {
+      return this.boxH
+    }
+    return this.boxW / aspect
+  }
+
+  /** 裁剪框在「图片容器」里的矩形（vp），容器与图片同尺寸，所以坐标从 0 起算 */
+  private cropLeft(): number {
+    return this.cropX * this.imgDw()
+  }
+
+  private cropTop(): number {
+    return this.cropY * this.imgDh()
+  }
+
+  private cropPxW(): number {
+    return this.cropW * this.imgDw()
+  }
+
+  private cropPxH(): number {
+    return this.cropHeightRatio() * this.imgDh()
+  }
+
+  /** 拖动框内：整块平移 */
+  private onCropDragStart(): void {
+    this.dragStartX = this.cropX
+    this.dragStartY = this.cropY
+    this.dragStartW = this.cropW
+    this.dragStartH = this.cropH
+  }
+
+  private onCropDrag(dx: number, dy: number): void {
+    const dw: number = this.imgDw()
+    const dh: number = this.imgDh()
+    if (dw <= 0 || dh <= 0) {
+      return
+    }
+    const cx: number = this.dragStartX + dx / dw + this.dragStartW / 2
+    const cy: number = this.dragStartY + dy / dh + this.dragStartH / 2
+    this.setCrop(cx, cy, this.dragStartW, this.dragStartH)
+  }
+
+  /**
+   * 拖右下角：**比例自由**缩放（左上角不动）
+   *
+   * 横向位移改宽度、纵向位移改高度，两者互不影响 —— 想框成什么比例就框成什么比例；
+   * 最小 12%，最大不超过图片右/下边界。
+   */
+  private onCropResize(dx: number, dy: number): void {
+    const dw: number = this.imgDw()
+    const dh: number = this.imgDh()
+    if (dw <= 0 || dh <= 0) {
+      return
+    }
+    const w: number = Math.min(1 - this.dragStartX, Math.max(0.12, this.dragStartW + dx / dw))
+    const h: number = Math.min(1 - this.dragStartY, Math.max(0.12, this.dragStartH + dy / dh))
+    this.placeCrop(this.dragStartX, this.dragStartY, w, h)
+  }
+
+  /** 取消裁剪：什么都不做，回到表格 */
+  private cancelCrop(): void {
+    this.showCrop = false
+    this.cropUri = ''
+    this.cropReady = false
+  }
+
+  /** 确认裁剪 → 真正识别（识别中显示蒙层，完成后填入表格） */
+  private async confirmCrop(): Promise<void> {
+    const uri: string = this.cropUri
+    const rect: CropRect = new CropRect(this.cropX, this.cropY, this.cropW, this.cropHeightRatio())
+    this.showCrop = false
+    this.cropUri = ''
     this.isRecognizing = true
     try {
-      const outcome: OcrOutcome = await recognizeGrid(uri)
+      const outcome: OcrOutcome = await recognizeCropped(uri, rect)
       this.isRecognizing = false
+      // 结果区表格下方显示「实际识别的那张图」，方便核对是不是裁歪了
+      this.previewPm = outcome.previewPm
       this.applyOcr(outcome)
     } catch (e) {
       this.isRecognizing = false
@@ -573,6 +746,232 @@ export struct PoetrySearchPage {
     .shadow({ radius: 24, color: $r('app.color.card_shadow'), offsetX: 0, offsetY: 8 })
   }
 
+  /**
+   * 结果区：表格下方的「识别用图」小预览
+   *
+   * 显示的是真正送去 OCR 的那张图（已裁好、已缩小），用户一眼能看出
+   * 是不是裁歪了、字是不是太小 —— 比只报「认出 N 个字」有用。
+   */
+  @Builder
+  OcrPreview() {
+    if (this.hasSearched && this.previewPm !== null) {
+      Column() {
+        Image(this.previewPm as image.PixelMap)
+          .width('100%')
+          .height(118)
+          .objectFit(ImageFit.Contain)
+          .borderRadius(10)
+          .border({ width: 1, color: $r('app.color.cell_border'), style: BorderStyle.Solid })
+          .draggable(false)
+
+        Text('识别用的图片（裁歪了可以重新识图）')
+          .fontSize(11)
+          .fontColor($r('app.color.text_secondary'))
+          .width('100%')
+          .textAlign(TextAlign.Center)
+          .margin({ top: 4 })
+      }
+      .width('100%')
+      .margin({ top: 12 })
+      .transition(TransitionEffect.OPACITY.animation({ duration: 180 }))
+    }
+  }
+
+  // ---------- 裁剪面板（v3.2）----------
+
+  /**
+   * 图片裁剪面板（v3.2）
+   *
+   * 拍照 / 选图后先在这里预览：程序自动把 6×5 字格框出来（蓝色框），
+   * 框不准就用手拖 —— 拖框内平移，拖右下角的圆点缩放。确认后才真正识别。
+   */
+  @Builder
+  CropPanel() {
+    Column() {
+      // 标题行
+      Row() {
+        Text('框选字格')
+          .fontSize(18)
+          .fontWeight(600)
+          .fontColor($r('app.color.text_primary'))
+          .layoutWeight(1)
+
+        Stack({ alignContent: Alignment.Center }) {
+          SymbolGlyph($r('sys.symbol.xmark'))
+            .fontSize(14)
+            .fontColor([$r('app.color.text_secondary')])
+        }
+        .width(28)
+        .height(28)
+        .borderRadius(14)
+        .backgroundColor($r('app.color.glass_card_bg'))
+        .backgroundBlurStyle(BlurStyle.COMPONENT_ULTRA_THICK, {
+          colorMode: ThemeColorMode.SYSTEM,
+          adaptiveColor: AdaptiveColor.AVERAGE
+        })
+        .border({ width: 1, color: $r('app.color.glass_card_edge'), style: BorderStyle.Solid })
+        .accessibilityText('关闭')
+        .accessibilityDescription('取消识图')
+        .onClick(() => {
+          Haptics.tick()
+          this.cancelCrop()
+        })
+      }
+      .width('100%')
+      .alignItems(VerticalAlign.Center)
+
+      Text('自动框住了图中的字格。框不准就拖框内移动、拖右下角圆点自由缩放（比例不限，尽量完整包住 6 列 × 5 行），确认后再识别')
+        .fontSize(12)
+        .fontColor($r('app.color.text_secondary'))
+        .width('100%')
+        .margin({ top: 4, bottom: 12 })
+
+      // 预览 + 裁剪框：外层容器负责居中，内层尺寸 = 图片尺寸（坐标系统一，好算）
+      Stack({ alignContent: Alignment.Center }) {
+        Stack({ alignContent: Alignment.TopStart }) {
+        Image(this.cropUri)
+          .width(this.imgDw())
+          .height(this.imgDh())
+          .objectFit(ImageFit.Fill)
+          .draggable(false)
+
+        // 四边压暗：只留裁剪框内是亮的
+        Column()
+          .position({ x: 0, y: 0 })
+          .width(this.imgDw())
+          .height(this.cropTop())
+          .backgroundColor($r('app.color.scrim'))
+          .hitTestBehavior(HitTestMode.None)
+        Column()
+          .position({ x: 0, y: this.cropTop() + this.cropPxH() })
+          .width('100%')
+          .height(Math.max(0, this.imgDh() - this.cropTop() - this.cropPxH()))
+          .backgroundColor($r('app.color.scrim'))
+          .hitTestBehavior(HitTestMode.None)
+        Column()
+          .position({ x: 0, y: this.cropTop() })
+          .width(Math.max(0, this.cropLeft()))
+          .height(this.cropPxH())
+          .backgroundColor($r('app.color.scrim'))
+          .hitTestBehavior(HitTestMode.None)
+        Column()
+          .position({ x: this.cropLeft() + this.cropPxW(), y: this.cropTop() })
+          .width(Math.max(0, this.imgDw() - this.cropLeft() - this.cropPxW()))
+          .height(this.cropPxH())
+          .backgroundColor($r('app.color.scrim'))
+          .hitTestBehavior(HitTestMode.None)
+
+        // 裁剪框本体：边框 + 三宫格辅助线（对齐 6 列 5 行时更好判断）
+        Column() {
+        }
+        .position({ x: this.cropLeft(), y: this.cropTop() })
+        .width(this.cropPxW())
+        .height(this.cropPxH())
+        .border({ width: 2, color: $r('app.color.primary'), style: BorderStyle.Solid })
+        .gesture(
+          PanGesture({ fingers: 1 })
+            .onActionStart(() => {
+              this.onCropDragStart()
+            })
+            .onActionUpdate((event: GestureEvent) => {
+              this.onCropDrag(event.offsetX, event.offsetY)
+            })
+        )
+
+        // 右下角缩放手柄
+        Stack({ alignContent: Alignment.Center }) {
+          Text('↘')
+            .fontSize(15)
+            .fontWeight(700)
+            .fontColor($r('app.color.on_primary'))
+        }
+        .width(30)
+        .height(30)
+        .borderRadius(15)
+        .backgroundColor($r('app.color.primary'))
+        .shadow({ radius: 8, color: $r('app.color.card_shadow'), offsetX: 0, offsetY: 2 })
+        .position({ x: this.cropLeft() + this.cropPxW() - 15, y: this.cropTop() + this.cropPxH() - 15 })
+        .accessibilityText('调整框大小')
+        .gesture(
+          PanGesture({ fingers: 1 })
+            .onActionStart(() => {
+              this.onCropDragStart()
+            })
+            .onActionUpdate((event: GestureEvent) => {
+              this.onCropResize(event.offsetX, event.offsetY)
+            })
+        )
+
+        // 自动定位中：盖一层转圈（此时框还不能拖）
+        if (!this.cropReady) {
+          Column() {
+            LoadingProgress()
+              .width(36)
+              .height(36)
+              .color($r('app.color.on_primary'))
+            Blank(8)
+            Text('正在定位字格…')
+              .fontSize(13)
+              .fontColor($r('app.color.on_primary'))
+          }
+          .width('100%')
+          .height('100%')
+          .justifyContent(FlexAlign.Center)
+          .alignItems(HorizontalAlign.Center)
+          .backgroundColor($r('app.color.scrim'))
+        }
+        }
+        .width(this.imgDw())
+        .height(this.imgDh())
+        .clip(true)
+      }
+      .width('100%')
+      .layoutWeight(1)
+      .borderRadius(12)
+      .clip(true)
+      .backgroundColor($r('app.color.cell_bg'))
+      .onAreaChange((oldArea: Area, newArea: Area) => {
+        this.boxW = newArea.width as number
+        this.boxH = newArea.height as number
+      })
+
+      // 操作行：取消 / 确认并识别
+      Row() {
+        Row() {
+          GlassButton({
+            label: '取消',
+            primary: false,
+            desc: '不识别这张图片',
+            action: () => { this.cancelCrop() }
+          })
+        }
+        .layoutWeight(1)
+
+        Blank(10)
+
+        Row() {
+          GlassButton({
+            label: '确认并识别',
+            primary: true,
+            desc: '按框住的范围识别字格并检索',
+            action: () => { this.confirmCrop() }
+          })
+        }
+        .layoutWeight(1)
+      }
+      .width('100%')
+      .margin({ top: 14 })
+    }
+    .width('100%')
+    .height('100%')
+    .alignItems(HorizontalAlign.Start)
+    .padding({ left: 16, right: 16, top: 16, bottom: 18 })
+    .backgroundColor($r('app.color.card_bg'))
+    .borderRadius(20)
+    .border({ width: 1, color: $r('app.color.cell_border'), style: BorderStyle.Solid })
+    .shadow({ radius: 24, color: $r('app.color.card_shadow'), offsetX: 0, offsetY: 8 })
+  }
+
   // ==================== UI 构建 ====================
 
   build() {
@@ -585,6 +984,7 @@ export struct PoetrySearchPage {
             this.Header()
             PoetryGrid({ gridData: $gridData, onPasteText: (t: string) => { this.fillFromPaste(t) } })
             this.ActionButtons()
+            this.OcrPreview()
 
             Blank(12)
 
@@ -622,6 +1022,7 @@ export struct PoetrySearchPage {
                   this.Header()
                   PoetryGrid({ gridData: $gridData, onPasteText: (t: string) => { this.fillFromPaste(t) } })
                   this.ActionButtons()
+                  this.OcrPreview()
                 }
                 .width('100%')
                 // minHeight 铺满视口：Scroll 默认会把「比视口小的子组件」垂直居中，这里靠上对齐
@@ -758,6 +1159,33 @@ export struct PoetrySearchPage {
         }
         .width('100%')
         .height('100%')
+        .backgroundColor($r('app.color.scrim'))
+        .transition(TransitionEffect.OPACITY.animation({ duration: 160 }))
+      }
+
+      // 裁剪面板：暗底 + 居中卡片（手机铺满宽度、平板限宽居中）
+      if (this.showCrop) {
+        Column() {
+          Row() {
+            Column() {
+              this.CropPanel()
+            }
+            .width('94%')
+            .height('100%')
+            .constraintSize({ maxWidth: 760 })
+          }
+          .width('100%')
+          .height('100%')
+          .justifyContent(FlexAlign.Center)
+        }
+        .width('100%')
+        .height('100%')
+        .padding({
+          left: 8,
+          right: 8,
+          top: this.topInset + 8,
+          bottom: this.barInset + 8
+        })
         .backgroundColor($r('app.color.scrim'))
         .transition(TransitionEffect.OPACITY.animation({ duration: 160 }))
       }

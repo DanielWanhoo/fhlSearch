@@ -25,7 +25,7 @@ entry/src/main/ets/
 │   ├── IdiomItem.ets                  # 成语数据模型
 │   └── PoetryItem.ets                 # 诗词数据模型（含 @Observed 格子类）
 ├── service/
-│   └── IdiomSearchService.ets         # 成语检索（三模式 + 历史栈）
+│   └── IdiomSearchService.ets         # 成语检索（声调/拼音/单字三组条件 + 历史栈）
 ├── engine/
 │   └── SearchEngine.ets               # 诗词检索引擎（集合匹配）
 ├── data/

@@ -20,7 +20,8 @@ export struct SplitDivider {
   @State isDragging: boolean = false
   private startRatio: number = 0.5
 
-  private get isActive(): boolean {
+  // 写成普通方法而不是 getter：@Component struct 里的 getter 不会被调用，读出来是 undefined
+  private isActiveNow(): boolean {
     return this.isHover || this.isDragging
   }
 
@@ -42,7 +43,7 @@ export struct SplitDivider {
         .width(8)
         .height(48)
         .borderRadius(4)
-        .backgroundColor(this.isActive ? $r('app.color.primary') : $r('app.color.cell_border'))
+        .backgroundColor(this.isActiveNow() ? $r('app.color.primary') : $r('app.color.cell_border'))
     }
     .width(DIVIDER_WIDTH)
     .height('100%')

@@ -16,6 +16,13 @@ export struct IdiomInputCell {
   @Prop value: string = ''
   @Prop mode: IdiomSearchMode = IdiomSearchMode.PINYIN
   @Prop index: number = 0
+  /**
+   * 输入组标识（v3.2：声调 / 拼音 / 单字三行同时展示）
+   *
+   * 三行输入格的位置索引都是 0~3，组件 id 必须带上组前缀才不会互相覆盖，
+   * 左右方向键的焦点跳转也只在本行内移动。
+   */
+  @Prop groupKey: string = ''
   @State isFocused: boolean = false  // 是否聚焦（聚焦边框变主色，与诗词格一致）
   onCellChange: (index: number, value: string) => void = () => {}
 
@@ -84,7 +91,7 @@ export struct IdiomInputCell {
       })
       .accessibilityText(`第${this.index + 1}个字的${this.placeholder()}输入格`)
       .accessibilityDescription(this.value === '' ? '当前为空' : `当前内容：${this.value}`)
-      .id(`idiom-cell-${this.index}`)
+      .id(`idiom-cell-${this.groupKey}-${this.index}`)
       .onKeyEvent((event: KeyEvent) => {
         if (event.type !== KeyType.Down) {
           return false
@@ -96,7 +103,8 @@ export struct IdiomInputCell {
           target = this.index + 1
         }
         if (target >= 0 && target <= 3) {
-          this.getUIContext().getFocusController().requestFocus(`idiom-cell-${target}`)
+          this.getUIContext().getFocusController()
+            .requestFocus(`idiom-cell-${this.groupKey}-${target}`)
           return true
         }
         return false

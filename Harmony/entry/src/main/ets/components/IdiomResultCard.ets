@@ -3,73 +3,82 @@ import { IdiomItem } from '../model/IdiomItem'
 /**
  * 成语检索结果卡片
  *
- * 布局：
+ * 布局（v3.2.2：每个字一列、整排靠左，自上而下 = 声调 → 拼音 → 汉字）：
  * ┌──────────────────────────────────────┐
- * │▌ 暗渡陈仓                            │
- * │  àn dù chén cāng                    │
- * │  声调：4 4 2 1                       │
+ * │▌(4)  (4)   (2)   (1)                 │
+ * │ àn   dù    chén  cāng                │
+ * │ 暗   渡    陈    仓                  │
  * └──────────────────────────────────────┘
  *
  * 左侧主色竖线用左描边实现（避免 height('100%') 撑高卡片导致上下留白）。
- * 被用户填写过的输入位置，其字 / 拼音 / 声调以绿色（match_highlight）整行标出。
+ * 声调用 cell_bg 底色的小方块标出。被用户填写过的条件（单字 / 拼音 / 声调）在对应位置标绿：
+ * 只填了拼音的那一格，只有那一列的拼音变绿，字与声调仍是常规色。
  */
 
 @Component
 export struct IdiomResultCard {
   @Prop item: IdiomItem
-  @Prop inputs: string[] = []  // 当前 4 个输入格内容，用于判断哪些位置被填写
+  // 三组输入格内容（v3.2 起声调 / 拼音 / 单字同时可填），逐行判断哪些位置被填写
+  @Prop toneInputs: string[] = []
+  @Prop pinyinInputs: string[] = []
+  @Prop charInputs: string[] = []
 
-  /** 第 i 个位置是否被用户填写（非空），是则整行标绿 */
-  private isHighlighted(i: number): boolean {
-    return (this.inputs[i] ?? '').trim() !== ''
+  private static filled(list: string[], i: number): boolean {
+    return (list[i] ?? '').trim() !== ''
+  }
+
+  /** 该字是否被「单字」条件命中 */
+  private charFilled(i: number): boolean {
+    return IdiomResultCard.filled(this.charInputs, i)
+  }
+
+  /** 该字是否被「拼音」条件命中 */
+  private pinyinFilled(i: number): boolean {
+    return IdiomResultCard.filled(this.pinyinInputs, i)
+  }
+
+  /** 该字是否被「声调」条件命中 */
+  private toneFilled(i: number): boolean {
+    return IdiomResultCard.filled(this.toneInputs, i)
   }
 
   build() {
-    Row() {
-      Column() {
-        // 成语：逐字标色
-        Row() {
-          ForEach(this.item.chars, (ch: string, idx: number) => {
-            Text(ch)
-              .fontSize(20)
-              .fontWeight(600)
-              .fontColor(this.isHighlighted(idx) ? $r('app.color.match_highlight') : $r('app.color.text_primary'))
-          }, (ch: string, idx: number) => idx.toString())
-        }
+    // 每个字一列、整排靠左；列宽跟着内容走（不再均分宽度，避免字与字之间留一大片空白）
+    Row({ space: 8 }) {
+      ForEach(this.item.chars, (ch: string, idx: number) => {
+        Column() {
+          // ① 声调
+          Text((this.item.tones[idx] ?? 0).toString())
+            .fontSize(10)
+            .fontWeight(500)
+            .height(15)
+            .width(18)
+            .textAlign(TextAlign.Center)
+            .borderRadius(4)
+            .backgroundColor($r('app.color.cell_bg'))
+            .fontColor(this.toneFilled(idx) ? $r('app.color.match_highlight') : $r('app.color.text_secondary'))
 
-        Blank(4)
-
-        // 拼音：逐段标色
-        Row() {
-          ForEach(this.item.pinyin, (py: string, idx: number) => {
-            Text(py)
-              .fontSize(13)
-              .fontWeight(400)
-              .fontColor(this.isHighlighted(idx) ? $r('app.color.match_highlight') : $r('app.color.text_secondary'))
-              .margin({ left: idx === 0 ? 0 : 6 })
-          }, (py: string, idx: number) => idx.toString())
-        }
-
-        Blank(2)
-
-        // 声调：逐项标色
-        Row() {
-          Text('声调：')
+          // ② 拼音
+          Text(this.item.pinyin[idx] ?? '')
             .fontSize(12)
             .fontWeight(400)
-            .fontColor($r('app.color.text_secondary'))
-          ForEach(this.item.tones, (t: number, idx: number) => {
-            Text(t.toString())
-              .fontSize(12)
-              .fontWeight(400)
-              .fontColor(this.isHighlighted(idx) ? $r('app.color.match_highlight') : $r('app.color.text_secondary'))
-              .margin({ left: idx === 0 ? 0 : 4 })
-          }, (t: number, idx: number) => idx.toString())
+            .height(17)
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+            .fontColor(this.pinyinFilled(idx) ? $r('app.color.match_highlight') : $r('app.color.text_secondary'))
+
+          // ③ 汉字
+          Text(ch)
+            .fontSize(20)
+            .fontWeight(600)
+            .height(28)
+            .fontColor(this.charFilled(idx) ? $r('app.color.match_highlight') : $r('app.color.text_primary'))
         }
-      }
-      .alignItems(HorizontalAlign.Start)
-      .layoutWeight(1)
+        .alignItems(HorizontalAlign.Center)
+      }, (ch: string, idx: number) => idx.toString())
     }
+    .justifyContent(FlexAlign.Start)
+    .alignItems(VerticalAlign.Top)
     .width('100%')
     .padding({ left: 12, top: 8, right: 12, bottom: 8 })
     .borderRadius(12)

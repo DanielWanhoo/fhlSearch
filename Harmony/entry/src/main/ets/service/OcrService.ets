@@ -42,6 +42,12 @@ export class OcrOutcome {
   charHeight: number = 0
   /** 实际执行了几次识别（多轮投票时会大于 1） */
   passes: number = 0
+  /**
+   * 识别用的那张图（已裁掉字格以外的部分、缩到显示尺寸）— v3.2 起在表格下方显示
+   *
+   * 所有权交给调用方（UI 直接塞给 Image 显示），这个类里的函数不释放它。
+   */
+  previewPm: image.PixelMap | null = null
 }
 
 // ==================== 能力探测 ====================
@@ -150,6 +156,321 @@ export async function recognizeSource(source: image.ImageSource): Promise<OcrOut
   }
 
   return mergeOutcomes(outcomes)
+}
+
+// ==================== 预览 + 裁剪（v3.2） ====================
+
+/** 6×5 字格的长宽比（6 列 5 行，格子近似正方形）：裁剪框按这个比例约束，保证整块字格都留在框内 */
+export const GRID_ASPECT: number = 6 / 5
+
+/** 裁剪框：相对整张图的**比例**（0~1），便于与显示尺寸解耦 */
+export class CropRect {
+  x: number = 0
+  y: number = 0
+  width: number = 1
+  height: number = 1
+
+  constructor(x: number, y: number, width: number, height: number) {
+    this.x = x
+    this.y = y
+    this.width = width
+    this.height = height
+  }
+}
+
+/** 图片原始尺寸（px） */
+export class ImageSizeInfo {
+  width: number = 0
+  height: number = 0
+
+  constructor(width: number, height: number) {
+    this.width = width
+    this.height = height
+  }
+}
+
+/** 读一张图的原始尺寸（图片预览要先按比例排版，得先知道宽高） */
+export async function imageSize(uri: string): Promise<ImageSizeInfo> {
+  const file = fs.openSync(uri, fs.OpenMode.READ_ONLY)
+  let source: image.ImageSource | undefined = undefined
+  try {
+    source = image.createImageSource(file.fd)
+    const info: image.ImageInfo = await source.getImageInfo()
+    return new ImageSizeInfo(info.size.width, info.size.height)
+  } finally {
+    if (source !== undefined) {
+      source.release()
+    }
+    fs.closeSync(file)
+  }
+}
+
+/** 自动框选用的解码长边：只是找字格大概位置，不需要太清晰 */
+const DETECT_SIDE = 1200
+
+/**
+ * 自动框出 6×5 字格的位置（图片预览里的初始裁剪框）
+ *
+ * 做法：整张图先按 1200px 长边解一遍、灰度增强后跑一次系统 OCR，
+ * 把认出来的字框按 5% / 95% 分位取范围（顺手滤掉标题、按钮这类零星文字），
+ * 再把范围撑成 6:5 并外扩一点点 —— 这一小块就是字格所在。
+ * @returns 归一化裁剪框；字认得太少（拍糊 / 没有文字）时返回 null，由界面给一个居中默认框
+ */
+export async function detectGridRect(uri: string): Promise<CropRect | null> {
+  const file = fs.openSync(uri, fs.OpenMode.READ_ONLY)
+  let source: image.ImageSource | undefined = undefined
+  let pm: image.PixelMap | null = null
+  let prepared: image.PixelMap | null = null
+  try {
+    source = image.createImageSource(file.fd)
+    const info: image.ImageInfo = await source.getImageInfo()
+    const scale: number = Math.min(1, DETECT_SIDE / Math.max(info.size.width, info.size.height))
+    const w: number = Math.max(1, Math.round(info.size.width * scale))
+    const h: number = Math.max(1, Math.round(info.size.height * scale))
+    pm = await source.createPixelMap({
+      editable: true,
+      desiredPixelFormat: image.PixelMapFormat.RGBA_8888,
+      desiredSize: { width: w, height: h }
+    })
+    prepared = await preprocess(pm, MODE_ENHANCE)
+    const chars: OcrChar[] = await recognizeChars(prepared === null ? pm : prepared)
+    hilog.info(DOMAIN, TAG, 'ocrDetect chars=%{public}d', chars.length)
+    return blockRect(chars, w, h)
+  } finally {
+    if (prepared !== null) {
+      prepared.release()
+    }
+    if (pm !== null) {
+      pm.release()
+    }
+    if (source !== undefined) {
+      source.release()
+    }
+    fs.closeSync(file)
+  }
+}
+
+/** 取第 q 分位（0~1）的值；数组需已升序 */
+function quantile(sorted: number[], q: number): number {
+  if (sorted.length === 0) {
+    return 0
+  }
+  const idx: number = Math.round((sorted.length - 1) * q)
+  const i: number = idx < 0 ? 0 : (idx >= sorted.length ? sorted.length - 1 : idx)
+  return sorted[i]
+}
+
+/**
+ * 由字框算出「字格所在矩形」，并归一化成 CropRect
+ * @param chars 识别出的字（像素坐标）
+ * @param w 这张图的宽（px）
+ * @param h 这张图的高（px）
+ */
+function blockRect(chars: OcrChar[], w: number, h: number): CropRect | null {
+  if (chars.length < 8) {
+    return null   // 字太少，框出来十有八九是错的，交给界面用默认框
+  }
+  // 只留「跟最大字差不多大」的字：截图里常混着标题、榜单、按钮等小字，
+  // 它们的字框会把范围拉到格子外面，导致自动框选偏掉
+  let maxW: number = 0
+  let maxH: number = 0
+  for (const c of chars) {
+    if (c.w > maxW) {
+      maxW = c.w
+    }
+    if (c.h > maxH) {
+      maxH = c.h
+    }
+  }
+  const big: OcrChar[] = chars.filter((c: OcrChar) => c.w >= maxW * 0.5 && c.h >= maxH * 0.5)
+  const use: OcrChar[] = big.length >= 8 ? big : chars
+
+  const lefts: number[] = []
+  const rights: number[] = []
+  const tops: number[] = []
+  const bottoms: number[] = []
+  for (const c of use) {
+    lefts.push(c.cx - c.w / 2)
+    rights.push(c.cx + c.w / 2)
+    tops.push(c.cy - c.h / 2)
+    bottoms.push(c.cy + c.h / 2)
+  }
+  lefts.sort((a: number, b: number) => a - b)
+  rights.sort((a: number, b: number) => a - b)
+  tops.sort((a: number, b: number) => a - b)
+  bottoms.sort((a: number, b: number) => a - b)
+  const x0: number = quantile(lefts, 0.04)
+  const x1: number = quantile(rights, 0.96)
+  const y0: number = quantile(tops, 0.04)
+  const y1: number = quantile(bottoms, 0.96)
+  return fitRect((x0 + x1) / 2, (y0 + y1) / 2, Math.max(4, x1 - x0), Math.max(4, y1 - y0), w, h)
+}
+
+/**
+ * 把「中心 + 尺寸」整理成 6:5 的裁剪框：撑到 6:5、外扩 8%（别把边上的格子切掉），再夹回图内
+ * @param cx 中心 x（px）
+ * @param cy 中心 y（px）
+ * @param bw 期望宽（px）
+ * @param bh 期望高（px）
+ */
+export function fitRect(cx: number, cy: number, bw: number, bh: number, w: number, h: number): CropRect {
+  let cw: number = Math.max(8, bw)
+  let ch: number = Math.max(8, bh)
+  // 撑成 6:5（取更「富裕」的那一边）
+  if (cw / ch > GRID_ASPECT) {
+    ch = cw / GRID_ASPECT
+  } else {
+    cw = ch * GRID_ASPECT
+  }
+  cw *= 1.08
+  ch *= 1.08
+  // 图装不下就整体等比缩小
+  const k: number = Math.min(1, w / cw, h / ch)
+  cw *= k
+  ch *= k
+  let nx: number = cx - cw / 2
+  let ny: number = cy - ch / 2
+  if (nx < 0) nx = 0
+  if (ny < 0) ny = 0
+  if (nx + cw > w) nx = w - cw
+  if (ny + ch > h) ny = h - ch
+  return new CropRect(nx / w, ny / h, cw / w, ch / h)
+}
+
+/** 预览用的解码长边（裁剪确认后识别用的工作图尺寸，兼顾识别率与内存） */
+const CROP_TARGET_SIDE = 1500
+
+/**
+ * 按裁剪框识别 6×5 字格（v3.2：先预览裁切、确认后再识别）
+ *
+ * 和 recognizeGrid 的区别：只把字格那一块解出来识别。
+ * 好处是同样的图，字格在解码后占的像素更多（背景照片不用占内存），小字也能认出来；
+ * 照片里的标题、按钮、桌面杂物也不会混进识别结果。
+ *
+ * 轮次与投票策略与 recognizeGrid 一致：①灰度增强 ②二值化（①已满 30 格且一致就跳）
+ * ③字太小时放大 2 倍再来一轮，最后按格投票。
+ * @returns 识别结果；其中 previewPm 是裁好的预览图（调用方负责显示，不释放）
+ */
+export async function recognizeCropped(uri: string, rect: CropRect): Promise<OcrOutcome> {
+  const file = fs.openSync(uri, fs.OpenMode.READ_ONLY)
+  let source: image.ImageSource | undefined = undefined
+  let pm: image.PixelMap | null = null
+  let handedOver: boolean = false
+  try {
+    source = image.createImageSource(file.fd)
+    const info: image.ImageInfo = await source.getImageInfo()
+    const fullW: number = info.size.width
+    const fullH: number = info.size.height
+    const cropW: number = Math.max(8, rect.width * fullW)
+    const cropH: number = Math.max(8, rect.height * fullH)
+    // 让裁剪后的长边落在 CROP_TARGET_SIDE 附近：字格小就放大解码，字格大就缩小
+    let scale: number = CROP_TARGET_SIDE / Math.max(cropW, cropH)
+    if (scale > 4) {
+      scale = 4
+    }
+    let dw: number = Math.max(8, Math.round(fullW * scale))
+    let dh: number = Math.max(8, Math.round(fullH * scale))
+    while (dw * dh > MAX_PIXELS && scale > 0.05) {
+      scale *= 0.8
+      dw = Math.max(8, Math.round(fullW * scale))
+      dh = Math.max(8, Math.round(fullH * scale))
+    }
+    pm = await source.createPixelMap({
+      editable: true,
+      desiredPixelFormat: image.PixelMapFormat.RGBA_8888,
+      desiredSize: { width: dw, height: dh }
+    })
+
+    // 裁掉字格以外的部分（crop 是就地裁剪）
+    // 比例不限制（v3.2.1 起用户可自由框），只保证矩形落在图内、不越界
+    const rw: number = Math.max(8, Math.min(dw, Math.round(rect.width * dw)))
+    const rh: number = Math.max(8, Math.min(dh, Math.round(rect.height * dh)))
+    const rx: number = Math.min(Math.max(0, Math.round(rect.x * dw)), Math.max(0, dw - rw))
+    const ry: number = Math.min(Math.max(0, Math.round(rect.y * dh)), Math.max(0, dh - rh))
+    const region: image.Region = {
+      x: rx,
+      y: ry,
+      size: {
+        width: Math.min(dw - rx, rw),
+        height: Math.min(dh - ry, rh)
+      }
+    }
+    await pm.crop(region)
+
+    const outcomes: OcrOutcome[] = []
+    const first: OcrOutcome = await recognizePassOn(pm, MODE_ENHANCE)
+    outcomes.push(first)
+    if (!agreeFully(outcomes)) {
+      try {
+        outcomes.push(await recognizePassOn(pm, MODE_BINARY))
+      } catch (err) {
+        hilog.warn(DOMAIN, TAG, 'crop binary failed: %{public}s', JSON.stringify(err))
+      }
+    }
+    if (first.charHeight > 0 && first.charHeight < TARGET_CHAR_PX) {
+      try {
+        await pm.scale(2, 2)
+        outcomes.push(await recognizePassOn(pm, MODE_ENHANCE))
+      } catch (err) {
+        hilog.warn(DOMAIN, TAG, 'crop 2x failed: %{public}s', JSON.stringify(err))
+      }
+    }
+    const merged: OcrOutcome = mergeOutcomes(outcomes)
+    merged.previewPm = await shrinkForPreview(pm)
+    pm = null          // 交出去了：预览图由调用方持有，这里不再释放
+    handedOver = true
+    return merged
+  } finally {
+    if (pm !== null && !handedOver) {
+      pm.release()
+    }
+    if (source !== undefined) {
+      source.release()
+    }
+    fs.closeSync(file)
+  }
+}
+
+/** 把工作图缩到适合当预览的尺寸（长边 ≤ 900px）；缩放失败就原样返回 */
+async function shrinkForPreview(pm: image.PixelMap): Promise<image.PixelMap> {
+  try {
+    const info: image.ImageInfo = await pm.getImageInfo()
+    const long: number = Math.max(info.size.width, info.size.height)
+    if (long > 900) {
+      const k: number = 900 / long
+      await pm.scale(k, k)
+    }
+  } catch (err) {
+    hilog.warn(DOMAIN, TAG, 'preview shrink failed: %{public}s', JSON.stringify(err))
+  }
+  return pm
+}
+
+/** 对一张已裁剪好的 PixelMap 跑一轮「预处理 + 识别」 */
+async function recognizePassOn(pm: image.PixelMap, mode: number): Promise<OcrOutcome> {
+  let prepared: image.PixelMap | null = null
+  try {
+    prepared = await preprocess(pm, mode)
+    const outcome: OcrOutcome = await recognizePixelMap(prepared === null ? pm : prepared)
+    const info: image.ImageInfo = await pm.getImageInfo()
+    outcome.imageWidth = info.size.width
+    outcome.imageHeight = info.size.height
+    return outcome
+  } finally {
+    if (prepared !== null) {
+      prepared.release()
+    }
+  }
+}
+
+/** 只做一次 OCR，返回「汉字 + 坐标」（自动框选、调试用） */
+async function recognizeChars(pixelMap: image.PixelMap): Promise<OcrChar[]> {
+  const visionInfo: textRecognition.VisionInfo = { pixelMap: pixelMap }
+  const config: textRecognition.TextRecognitionConfiguration = {
+    isDirectionDetectionSupported: true
+  }
+  const result: textRecognition.TextRecognitionResult = await textRecognition.recognizeText(visionInfo, config)
+  return collectChars(result)
 }
 
 export const MODE_RAW: number = 0      // 原样（调试用）
@@ -411,13 +732,7 @@ function mergeOutcomes(list: OcrOutcome[]): OcrOutcome {
  */
 export async function recognizePixelMap(pixelMap: image.PixelMap): Promise<OcrOutcome> {
   const outcome = new OcrOutcome()
-  const visionInfo: textRecognition.VisionInfo = { pixelMap: pixelMap }
-  const config: textRecognition.TextRecognitionConfiguration = {
-    // 拍照可能是横竖颠倒的：保留方向检测更稳（关掉能快一点，但拍歪就认不出行）
-    isDirectionDetectionSupported: true
-  }
-  const result: textRecognition.TextRecognitionResult = await textRecognition.recognizeText(visionInfo, config)
-  const chars: OcrChar[] = collectChars(result)
+  const chars: OcrChar[] = await recognizeChars(pixelMap)
   outcome.totalHanzi = chars.length
   outcome.charHeight = medianHeight(chars)
   outcome.grid = extractGrid(chars)

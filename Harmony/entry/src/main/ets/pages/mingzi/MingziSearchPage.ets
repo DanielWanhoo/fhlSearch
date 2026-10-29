@@ -53,9 +53,6 @@ export struct MingziSearchPage {
     alignment: DialogAlignment.Center,
     customStyle: true
   })
-  @State showInputSheet: boolean = false  // 输入模式底部面板
-  @State inputMode: MingziSearchMode = MingziSearchMode.OCCUPATION  // 当前输入模式
-  @State inputValue: string = ''  // 输入面板中的关键词
   @State windowWidth: number = 0  // 窗口宽度，用于断点判断（≤600 单栏，>600 双栏）
   // 双栏左右宽度比例（0~1，左栏占比），可拖动调节；用 AppStorage 共享给主页面 —— 平板页签栏据此水平居中于左栏
   @StorageLink('splitRatio') splitRatio: number = 0.5
@@ -157,28 +154,18 @@ export struct MingziSearchPage {
 
   private inputPlaceholder(mode: MingziSearchMode): string {
     if (mode === MingziSearchMode.OCCUPATION) {
-      return '请输入职业，如：帝王、诗人'
+      return '如：帝王、诗人'
     }
     if (mode === MingziSearchMode.BORN) {
-      return '请输入生逢（生于…）描述，如：乱世'
+      return '如：乱世'
     }
     if (mode === MingziSearchMode.ORIGIN) {
-      return '请输入出身/身世，如：出身显贵'
+      return '如：出身显贵'
     }
     if (mode === MingziSearchMode.SKILL) {
-      return '请输入技能，如：剑舞者'
+      return '如：剑舞者'
     }
-    return '请输入其他描述，如：诗仙'
-  }
-
-  private hasHan(s: string): boolean {
-    for (let i = 0; i < s.length; i++) {
-      const code = s.charCodeAt(i)
-      if (code >= 0x4E00 && code <= 0x9FFF) {
-        return true
-      }
-    }
-    return false
+    return '如：诗仙'
   }
 
   /** 全部已应用的检索关键词（用于详情高亮） */
@@ -190,12 +177,6 @@ export struct MingziSearchPage {
     this.detailItem = item
     this.detailQueries = this.keyQueries()
     this.detailDialogCtrl.open()
-  }
-
-  private onOpenInput(mode: MingziSearchMode): void {
-    this.inputMode = mode
-    this.inputValue = ''
-    this.showInputSheet = true
   }
 
   /**
@@ -247,35 +228,6 @@ export struct MingziSearchPage {
         }
       }
     })
-  }
-
-  private confirmInput(): void {
-    const v = this.inputValue.trim()
-    if (v === '') {
-      AlertDialog.show({
-        title: '请填写检索内容',
-        message: `请输入${this.modeLabel(this.inputMode)}关键词`,
-        confirm: {
-          value: '确定',
-          action: () => {}
-        }
-      })
-      return
-    }
-    if (!this.hasHan(v)) {
-      AlertDialog.show({
-        title: '请输入中文关键词',
-        message: '检索会忽略标点符号、空格等非汉字字符',
-        confirm: {
-          value: '确定',
-          action: () => {}
-        }
-      })
-      return
-    }
-    this.showInputSheet = false
-    // 同样只记录条件，等用户点「检索 / 二次检索」
-    this.stage(this.inputMode, v)
   }
 
   /** 某模式**已应用**的检索条件（尚未应用过则返回空串） */
@@ -531,6 +483,12 @@ export struct MingziSearchPage {
     })
   }
 
+  /**
+   * 输入模式行（v3.2.2）：直接在行里填，不再弹底部面板
+   *
+   * 左侧是模式名，右侧是 TextInput（右对齐，和原来「值显示在右边」的观感一致）；
+   * 边打字边写回 selectedValues，点「检索 / 二次检索」时才真正应用。
+   */
   @Builder
   InputModeRow(def: ModeDef) {
     Row() {
@@ -538,31 +496,32 @@ export struct MingziSearchPage {
         .fontSize(15)
         .fontWeight(500)
         .fontColor($r('app.color.text_primary'))
+        .margin({ right: 8 })
+      TextInput({ text: this.selectedOf(def.mode), placeholder: this.inputPlaceholder(def.mode) })
         .layoutWeight(1)
-      Text(this.selectedOf(def.mode).length > 0 ? this.selectedOf(def.mode) : '输入')
-        .fontSize(13)
+        .height(44)
+        .padding({ left: 0, right: 0 })
+        .fontSize(15)
         .fontWeight(this.selectedOf(def.mode).length > 0 ? 600 : 400)
-        .fontColor(this.selectedOf(def.mode).length > 0 ? $r('app.color.match_highlight') : $r('app.color.text_secondary'))
-        .maxLines(1)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-        .constraintSize({ maxWidth: '55%' })
-        .margin({ right: 6 })
-      SymbolGlyph($r('sys.symbol.chevron_down'))
-        .fontSize(13)
-        .fontColor([$r('app.color.text_secondary')])
+        .fontColor(this.selectedOf(def.mode).length > 0 ? $r('app.color.match_highlight') : $r('app.color.text_primary'))
+        .placeholderColor($r('app.color.text_secondary'))
+        .placeholderFont({ size: 14 })
+        .textAlign(TextAlign.End)
+        .maxLength(20)
+        .backgroundColor(Color.Transparent)
+        .onChange((v: string) => {
+          this.stage(def.mode, v)
+        })
     }
     .width('100%')
-    .height(44)
+    .height(48)
     .padding({ left: 14, right: 14 })
     .backgroundColor($r('app.color.card_bg'))
     .borderRadius(12)
     .border({ width: 1, color: $r('app.color.cell_border'), style: BorderStyle.Solid })
     .margin({ bottom: 8 })
-    .accessibilityText(`${def.label}检索模式，已选 ${this.selectedOf(def.mode)}`)
-    .accessibilityDescription('点击输入关键词')
-    .onClick(() => {
-      this.onOpenInput(def.mode)
-    })
+    .accessibilityText(`${def.label}检索条件，当前 ${this.selectedOf(def.mode)}`)
+    .accessibilityDescription('直接在行内输入关键词')
   }
 
   @Builder
@@ -822,53 +781,6 @@ export struct MingziSearchPage {
     .height('100%')
   }
 
-  @Builder
-  InputSheet() {
-    Column() {
-      Text(`${this.modeLabel(this.inputMode)}检索`)
-        .fontSize(18)
-        .fontWeight(600)
-        .fontColor($r('app.color.text_primary'))
-        .width('100%')
-      TextInput({ placeholder: this.inputPlaceholder(this.inputMode) })
-        .width('100%')
-        .height(44)
-        .margin({ top: 16 })
-        .backgroundColor($r('app.color.cell_bg'))
-        .borderRadius(10)
-        .onChange((v: string) => {
-          this.inputValue = v
-        })
-      Row() {
-        Button('取消')
-          .layoutWeight(1)
-          .height(40)
-          .fontSize(15)
-          .fontColor($r('app.color.text_secondary'))
-          .backgroundColor($r('app.color.cell_bg'))
-          .borderRadius(20)
-          .onClick(() => {
-            this.showInputSheet = false
-          })
-        Blank(12)
-        Button('确定')
-          .layoutWeight(1)
-          .height(40)
-          .fontSize(15)
-          .fontColor($r('app.color.on_primary'))
-          .backgroundColor($r('app.color.primary'))
-          .borderRadius(20)
-          .onClick(() => {
-            this.confirmInput()
-          })
-      }
-      .width('100%')
-      .margin({ top: 20 })
-    }
-    .width('100%')
-    .padding({ left: 20, right: 20, top: 16, bottom: 24 })
-  }
-
   build() {
     Column() {
       if (this.windowWidth === 0 || this.windowWidth <= 600) {
@@ -897,11 +809,6 @@ export struct MingziSearchPage {
         return   // 面积没真变（切页签、弹出层都会触发一次）：直接返回，省一次整页重建
       }
       this.windowWidth = w
-    })
-    .bindSheet($$this.showInputSheet, this.InputSheet(), {
-      height: 220,
-      showClose: true,
-      backgroundColor: $r('app.color.card_bg')
     })
   }
 }

@@ -2,7 +2,7 @@
 
 《忘川风华录》「山石雅集」与「众里寻他」三类检索题的**离线查询小工具**。
 
-**当前版本：Windows 3.1.0 · Android 3.1 · HarmonyOS 3.0.0**
+**当前版本：Windows 3.1.0 · Android 3.1 · HarmonyOS 3.2.3**
 
 按平台分目录存放，目前有：
 
@@ -35,7 +35,7 @@
 | --- | --- | --- |
 | Windows | **[`Windows/dist/fhlSearch.exe`](Windows/dist/fhlSearch.exe)** | 双击就能用。不联网、不写注册表、不需要安装。Win7 需要系统已装 .NET Framework 4.0+，Win10 / Win11 系统自带。诗词「从图片识别」需 Win10 1809+ |
 | Android | **[`Android/dist/fhlSearch.apk`](Android/dist/fhlSearch.apk)** | 传到手机 / 平板点一下安装（需允许「安装未知应用」）。不联网、不要任何权限，Android 10 及以上 |
-| HarmonyOS | **[`Harmony/dist/fhlSearch.hap`](Harmony/dist/fhlSearch.hap)**（**未签名**，约 1.4 MB） | **不能直接点开安装**，必须侧载（见下）。HarmonyOS NEXT（API 24 / 6.1.1）手机与平板；v3.0 起支持「从图片识别」（用系统自带文字识别，本地完成） |
+| HarmonyOS | **[`Harmony/dist/fhlSearch.hap`](Harmony/dist/fhlSearch.hap)**（**未签名**，约 1.6 MB；各版本副本见 `Harmony/dist/`） | **不能直接点开安装**，必须侧载（见下）。HarmonyOS NEXT（API 24 / 6.1.1）手机与平板；v3.0 起支持「从图片识别」（用系统自带文字识别，本地完成），v3.2 起识图可先框选字格 |
 
 ### HarmonyOS 版：未签名 hap 需要侧载
 
