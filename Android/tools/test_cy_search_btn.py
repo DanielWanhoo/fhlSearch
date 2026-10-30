@@ -126,7 +126,17 @@ WIDE = screen_width() >= 1200
 sh('am start -S -n ' + ACT)
 time.sleep(6)
 d.tap('成语检索', by='text', label='导航·成语')
-time.sleep(2)
+# 冷启动/刚装完时首页要一会儿才把 12 格和检索键铺出来，固定 sleep 会误判
+# （曾出现 ① 检索键=False）。等到「12 格 + btnSearch」都出现为止。
+for _ in range(25):
+    time.sleep(1)
+    ns = d.nodes()
+    if sum(1 for n in ns if n['id'].endswith('/etCell')) >= 12 and \
+            any(n['id'].endswith('/btnSearch') for n in ns):
+        break
+    if not any(n['id'].endswith('/etCell') for n in ns):
+        d.tap('成语检索', by='text', label=None)
+time.sleep(1)
 
 # ① 初始：12 格同屏、检索键在、无摘要
 c = cells()

@@ -46,6 +46,9 @@ class CropSheetFragment : CenteredDialogFragment() {
     /** 读图 / 自动框选 / 存盘的任务 */
     private var job: Job? = null
 
+    /** 窗口宽度（onStart 里定好，之后按图片比例收窄高度时复用） */
+    private var winW = 0
+
     override val maxWidthRes: Int get() = R.dimen.fhl_crop_dialog_max_w
 
     override val widthRatio: Float get() = 0.94f
@@ -58,14 +61,42 @@ class CropSheetFragment : CenteredDialogFragment() {
         super.onStart()
         val win = dialog?.window ?: return
         val dm = resources.displayMetrics
-        val w = minOf(
+        winW = minOf(
             (dm.widthPixels * widthRatio).toInt(),
             resources.getDimensionPixelSize(maxWidthRes),
         )
-        val h = (dm.heightPixels * 0.86f).toInt()
-        win.setLayout(w, h)
+        // 先给个高一点的窗口（图读进来后 fitWindowToImage 会按图片比例收窄）
+        win.setLayout(winW, (dm.heightPixels * 0.86f).toInt())
         win.setGravity(Gravity.CENTER)
     }
+
+    /**
+     * 按图片宽高比收缩窗口高度：一张 6:5 的字格图不需要占满整屏，
+     * 否则上下会留一大片黑边。chrome = 标题 + 提示 + 按钮那几条固定高度。
+     */
+    private fun fitWindowToImage(bmp: Bitmap, pass: Int = 0) {
+        val win = dialog?.window ?: return
+        if (winW <= 0 || bmp.width <= 0) return
+        val dm = resources.displayMetrics
+        val maxH = (dm.heightPixels * 0.86f).toInt()
+        b.cropView.post {
+            val view = _b?.cropView ?: return@post
+            val canvasW = view.width
+            val chrome = b.root.height - view.height
+            if (canvasW <= 0 || chrome < 0) return@post
+            val want = (canvasW.toFloat() * bmp.height / bmp.width).toInt() + chrome
+            // 下限只保「画布别小到不好拖」：chrome + 160dp，不能用屏幕比例，
+            // 否则横向的字格图会被顶高、上下又留黑边
+            val minH = (chrome + dp(160)).coerceAtMost(maxH)
+            val target = want.coerceIn(minH, maxH)
+            val delta = Math.abs(b.root.height - target)
+            win.setLayout(winW, target)
+            // 第一次量到的是"改窗口前"的画布宽度，按新宽度再校一到两轮
+            if (pass < 2 && delta > dp(6)) fitWindowToImage(bmp, pass + 1)
+        }
+    }
+
+    private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -125,6 +156,7 @@ class CropSheetFragment : CenteredDialogFragment() {
             val (bmp, box) = loaded
             photo = bmp
             b.cropView.setImage(bmp, box?.let { expand(it) })
+            fitWindowToImage(bmp)
             b.tvCropHint.setText(
                 if (box != null) R.string.ocr_crop_auto else R.string.ocr_crop_manual
             )

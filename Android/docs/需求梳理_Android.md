@@ -1103,8 +1103,12 @@ v3.0 在这 4 张上的成绩是 **30 / 26~27 / 29 / 29~30 格**，其中 IMG_10
 （6×5 切格 → 拼板 → ML Kit → 三趟投票）→ 30 格填好自动检索 → 裁好的那张图显示在格子上方。
 识别链路本身一行没改，所以 v3.1 的调优全部保留。
 
-裁切面板的高度在 `onStart` 里直接 `setLayout(宽, 高)`（宽取 `min(屏宽*0.94, 560dp)`，
-高取屏高*0.86）—— `CenteredDialogFragment` 默认的 `wrap_content` 装不下"大图 + 三个键"。
+裁切面板的窗口尺寸在 `onStart` 里直接 `setLayout()` —— `CenteredDialogFragment` 默认的
+`wrap_content` 装不下"大图 + 三个键"。宽取 `min(屏宽*0.94, 560dp)`；高度**按图片宽高比算**：
+`fitWindowToImage()` 先量出画布宽度和"标题+提示+按键"的固定高度(chrome)，再取
+`画布宽 × 图高/图宽 + chrome`，夹在 `chrome+160dp` 与 `屏高*0.86` 之间，量到新宽度后再校正
+一到两轮。这样横向的字格图不会把面板顶成一根长条、上下留一片黑边（平板 1600×2560 实测：
+画布从 792×1972 收成 792×620，正好等于图片比例）。
 
 ### 25.4 名士检索：选项面板的显示顺序
 
@@ -1139,9 +1143,23 @@ v3.0 在这 4 张上的成绩是 **30 / 26~27 / 29 / 29~30 格**，其中 IMG_10
 - 三台设备（API 37 手机 1080×2400 / 平板 1600×2560 / API 29 手机 1080×1920）全量回归：
   `drive_app` / `cy_search_btn` / `cy_second_search` / `shici_focus` / `ms_search_btn` /
   `ms_dialogs` / `ms_options_order` / `info` / `ocr` / `ocr_gallery` 全部通过、无崩溃；
-- 打包：`android\一键重新打包apk.bat` → `dist\忘川检索.apk`，**46,453,559 字节（≈44.3 MB，
-  与 v3.1 基本持平 —— 新功能没引入任何依赖）**，MD5 `3937A0EA992E700FA4459A622F552FD6`；
+- 打包：`android\一键重新打包apk.bat` → `dist\忘川检索.apk`，**46,469,943 字节（≈44.3 MB，
+  与 v3.1 基本持平 —— 新功能没引入任何依赖）**，MD5 `0FD6F82E2998EBE4A127C2A60B2A28A1`；
   脚本第 1 步会用 `tools/build_tiku.py` 重生成题库数据，本机 python 缺 `openpyxl` 时会直接
   报错退出（`pip install openpyxl` 后恢复正常，题库未改动时输出一致）。
 
+### 25.6 交付后的两处打磨
 
+都是照着用户发的截图改的，识别链路与检索规则都没动。
+
+| 现象 | 根因 | 修法 |
+| --- | --- | --- |
+| 裁切面板里"取消""重新框选"和"确认裁切"不在一条水平线上 | 三个键在同一个 `LinearLayout` 里，默认 `baselineAligned="true"`；三个按钮 `autoSizeTextType="uniform"` 缩出来的字号不一样，按**文字基线**对齐就把中间那个顶下去了 | 裁切面板这一行、以及诗词页两行按钮（`拍照识别`/`相册识别`、`清空`/`开始检索`）都加 `android:baselineAligned="false"`，改成按控件底部对齐 |
+| 平板/手机上裁切面板几乎占满整屏，图片上下各一大片黑边 | 窗口高度写死屏高*0.86，跟图片比例无关；`CropView` 只能把图居中放进画布 | 窗口高度按图片宽高比算（见 25.3 末尾），并改了两处：①`minH` 用 `chrome+160dp` 而不是屏高比例（否则横向图会被顶高，黑边又回来了）②最后一次计算也要真正 `setLayout`（第一版把"是否收敛"的判断写成了"是否应用"，最后一轮目标高度没生效） |
+
+验证：`_analysis\crop_bounds.py` 量平板/手机上三个键的 bounds，确认为同一 `y` 区间
+（手机 `y=2064~2190`，三个键同高）；`test_ocr_gallery.py` 在平板/手机上均通过，画布比例
+与图片一致；截图 `docs/shots/phone_ocr_crop_phone.png`、`tabfit4_ocr_crop_tabfit4.png`。
+
+顺带把 `tools/test_cy_search_btn.py` 的启动等待从固定 `sleep` 改成"等 12 格 + 检索键都出现"
+（最多 25 秒）—— 刚装完就连续跑套件时曾偶发 ①② 误判"检索键=False"。
