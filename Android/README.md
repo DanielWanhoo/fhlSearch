@@ -22,6 +22,7 @@
   命中的位次整列标绿；手机出结果后条件区**自动折叠成一行摘要**（可展开继续改），按键照留。
 - **诗词图片识别**：选完图先进**裁剪面板** —— 自动框出 6×5 字格，可拖动框体/四角自由调比例，
   点「确认裁切」才识别；结果区格子下方显示**裁好的那张图**，点一下可重新裁。
+  裁切面板按图片宽高比自动调高度（横向字格图不再上下留黑边），三个键底边对齐。
 - **名士检索**：滚轮选项重排 —— 朝代按**历史时间顺序**（"梦"压最末），
   爱好 / 社团 / 品阶按**拼音首字母 A~Z**。
 
@@ -110,7 +111,7 @@ cd 项目根目录
 $env:PYTHONIOENCODING='utf-8'
 # 走一遍全流程并抓图（模拟器上要先装好 app；脚本会自己装 debug 包）
 python tools\drive_app.py emulator-5554 phone
-# 想验证正式包：先设 $env:FHL_APK='dist\忘川检索.apk'
+# 想验证正式包：先设 $env:FHL_APK=<仓库根>\dist\忘川检索.apk
 ```
 
 > ⚠️ 装机坑：设备上如果装的是 **release 签名**包，直接 `adb install -r` debug 包会报
@@ -122,13 +123,13 @@ python tools\drive_app.py emulator-5554 phone
 
 | 脚本 | 干什么 | 用法 |
 | --- | --- | --- |
-| `validate_res.py` | 资源/XML/引用静态校验（当前 600 处引用全通过） | `python tools\validate_res.py` |
+| `validate_res.py` | 资源/XML/引用静态校验（当前 **749 处引用**全通过） | `python tools\validate_res.py` |
 | `reference_logic.py --selftest` | 三大模块检索语义的基准自测 | `python tools\reference_logic.py --selftest` |
 | `drive_app.py` | 全流程自动走一遍 + 抓图 + 崩溃检查 | `python tools\drive_app.py <设备> phone\|tablet\|api29` |
 | `test_shici_focus.py` | 字格**选中框与输入焦点是否同步**（9 项） | `python tools\test_shici_focus.py <设备>` |
 | `test_ms_dialogs.py` | 名士三个窗口**是否屏幕居中** | `python tools\test_ms_dialogs.py <设备> [标签]` |
 | `test_ms_search_btn.py` | 名士**检索键显隐** 10 个状态 | `python tools\test_ms_search_btn.py <设备>` |
-| `test_cy_search_btn.py` | 成语**三组同屏 / 折叠展开 / 逐字对齐 / 内容保留**（9 项，手机含折叠、平板只查常显） | `python tools\test_cy_search_btn.py <设备>` |
+| `test_cy_search_btn.py` | 成语**三组同屏 / 折叠展开 / 逐字对齐 / 内容保留**（14 项，手机含折叠、平板只查常显） | `python tools\test_cy_search_btn.py <设备>` |
 | `test_cy_second_search.py` | 成语**二次检索 / 清空当前 / 清空所有** 的层级与标注 | `python tools\test_cy_second_search.py <设备>` |
 | `test_ms_options_order.py` | 名士滚轮**选项顺序**（朝代时间序、其余拼音序，逐项比到末项） | `python tools\test_ms_options_order.py <设备>` |
 | `test_ocr.py` | **图片识别**：6 张样例图逐张识别 + 与 Windows 端对照 + 是否直接出诗句 | `python tools\test_ocr.py <设备> [标签]` |
@@ -160,6 +161,7 @@ python tools\drive_app.py emulator-5554 phone
 | 图片识别（v3.2） | 6 张样例图：**全部 30/30 填满、6 张都直接给出诗句**（落日故人情 / 气蒸云梦泽 / 依楼似月悬 / 别有千金笑 / 浮云游子意 ×2），其中 2 张靠"按题库补 1 个字"；与 Windows 端逐格一致率 66~100%。新增裁切面板后**识别结果不变**（自动框选框住的就是原来整图定位的那块） |
 | 信息面板（v3.2） | 三个模块的 ⓘ 都能弹出、屏幕居中、显示版本 3.2 与用法正文、可滚动、可关闭 |
 | 成语三组同屏（v3.2） | 手机 1080×2400 / 平板 1600×2560 / API29 1080×1920 三台设备全通过：三组 12 格常显、出结果折叠成摘要（平板双栏不折叠）、展开可继续改、框里内容全程保留、结果四列逐字对齐 |
+| 裁切面板（v3.2 打磨） | 三键同一行、底边对齐（手机 y=2064~2190 等高）；面板高度按图片比例算：平板画布 792×1972 → **792×620**、手机 931×1663 → **931×729**，均与图片比例一致 |
 | 名士选项排序（v3.2） | 三台设备逐项核对：朝代 15 项「先秦 → … → 清 → 梦」、爱好 / 社团 / 品阶均按首字母 A~Z |
 
 > 逐轮改动与每轮的验收数据见 `docs\需求梳理_Android.md`（第一 ~ 二十五节）。
