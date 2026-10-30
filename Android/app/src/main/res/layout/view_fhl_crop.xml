@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  图片裁切面板（v3.2）。
+
+  选好图片后先在这里核对"要识别的范围"：程序已经按几何算好的 6×5 字格外框
+  自动放好一个框，用户不满意就拖动框体 / 拖四角四边自由调整，点「确认裁切」才真正开始识别。
+  高度在 CropSheetFragment.onStart 里按屏幕比例给，所以这里的裁切控件用 weight 撑满。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_fhl_sheet"
+    android:orientation="vertical"
+    android:padding="@dimen/fhl_gap_l">
+
+    <TextView
+        android:id="@+id/tvCropTitle"
+        style="@style/TextFhlBody"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/ocr_crop_title"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvCropHint"
+        style="@style/TextFhlCaption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_xs"
+        android:text="@string/ocr_crop_detecting" />
+
+    <com.wangchuan.fhlsearch.widget.CropView
+        android:id="@+id/cropView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="@dimen/fhl_gap_m"
+        android:layout_weight="1"
+        android:background="@color/fhl_crop_bg"
+        android:minHeight="220dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_m"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCropCancel"
+            style="@style/BtnFhlLight"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/fhl_btn_h"
+            android:layout_weight="1"
+            android:text="@string/ocr_crop_cancel"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="8sp"
+            app:autoSizeMaxTextSize="@dimen/fhl_fs_body_s" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCropReset"
+            style="@style/BtnFhlLight"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/fhl_btn_h"
+            android:layout_marginStart="@dimen/fhl_gap_s"
+            android:layout_weight="1"
+            android:text="@string/ocr_crop_reset"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="8sp"
+            app:autoSizeMaxTextSize="@dimen/fhl_fs_body_s" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCropConfirm"
+            style="@style/BtnFhlPrimary"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/fhl_btn_h"
+            android:layout_marginStart="@dimen/fhl_gap_s"
+            android:layout_weight="1.4"
+            android:enabled="false"
+            android:text="@string/ocr_crop_confirm"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="8sp"
+            app:autoSizeMaxTextSize="@dimen/fhl_fs_body_s" />
+    </LinearLayout>
+</LinearLayout>

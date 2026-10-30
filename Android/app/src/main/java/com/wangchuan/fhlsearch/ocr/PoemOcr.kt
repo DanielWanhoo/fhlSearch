@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
+import android.graphics.RectF
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -88,6 +89,51 @@ object PoemOcr {
                 if (ch == BLANK) "？" else ch.toString()
             }
         }
+    }
+
+    // ================================================================ 自动框选（只算几何）
+
+    /**
+     * **只算几何、不做识别**：找出图中 6×5 字格的外框，给"选图后的自动框选"用。
+     *
+     * 复用识别流程里"面板检测 + 暗像素投影"那一段（[findPanel] / [findGrid]），
+     * 但把结果收成一个矩形，并在四周各放半格左右的余量 —— 裁得太紧会把格线与
+     * 面板边框切掉，后续识别反而找不到格。
+     *
+     * @return 归一化坐标（0~1，相对传入位图）；没找到 5×6 结构时返回 null。
+     */
+    fun detectGridBox(source: Bitmap): RectF? {
+        val img = scaleTo(source, MAX_SIDE)
+        val w = img.width
+        val h = img.height
+        val lum = luma(img)
+
+        val regions = ArrayList<IntArray>()
+        val panel = findPanel(lum, w, h)
+        if (panel != null) regions.add(panel)
+        regions.add(intArrayOf(0, 0, w - 1, h - 1))
+
+        // 面板优先，但面板那趟可能只是"像 5x6"（reliable=false），
+        // 所以两趟都试：先拿 reliable 的，没有再退而求其次。
+        var best: Grid? = null
+        for (r in regions) {
+            val g = findGrid(lum, w, h, r[0], r[1], r[2], r[3]) ?: continue
+            if (g.reliable) { best = g; break }
+            if (best == null) best = g
+        }
+        val g = best ?: return null
+
+        val gridW = (g.colEnd[COLS - 1] - g.colStart[0]).toFloat()
+        val gridH = (g.rowEnd[ROWS - 1] - g.rowStart[0]).toFloat()
+        val mx = if (g.colPitch > 0) g.colPitch * 0.35f else gridW * 0.06f
+        val my = if (g.rowPitch > 0) g.rowPitch * 0.35f else gridH * 0.06f
+
+        val l = (g.colStart[0] - mx).coerceIn(0f, w.toFloat())
+        val t = (g.rowStart[0] - my).coerceIn(0f, h.toFloat())
+        val rr = (g.colEnd[COLS - 1] + mx).coerceIn(0f, w.toFloat())
+        val bb = (g.rowEnd[ROWS - 1] + my).coerceIn(0f, h.toFloat())
+        if (rr - l < w * 0.05f || bb - t < h * 0.05f) return null
+        return RectF(l / w, t / h, rr / w, bb / h)
     }
 
     // ================================================================ 主流程

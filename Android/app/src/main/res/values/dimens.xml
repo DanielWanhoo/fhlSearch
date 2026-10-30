@@ -46,6 +46,10 @@
     <!-- 居中弹窗（滚轮选择 / 名士详情）：窄屏取屏幕宽度的 90%，宽屏最多这么宽 -->
     <dimen name="fhl_dialog_max_w">440dp</dimen>
 
+    <!-- 图片识别（v3.2）：结果下方「识别用图」预览的高度上限；裁切面板的对话框尺寸 -->
+    <dimen name="fhl_ocr_preview_max_h">180dp</dimen>
+    <dimen name="fhl_crop_dialog_max_w">560dp</dimen>
+
     <!-- 屏幕边距 -->
     <dimen name="fhl_screen_pad">16dp</dimen>
     <dimen name="fhl_pane_gap">20dp</dimen>

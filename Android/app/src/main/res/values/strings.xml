@@ -28,13 +28,26 @@
     <string name="cy_mode_char">单字</string>
     <string name="cy_hint_pinyin">拼音</string>
     <string name="cy_hint_tone">声调</string>
-    <string name="cy_hint_char">单字</string>
+    <string name="cy_hint_char">字</string>
     <string name="cy_search">检索</string>
     <string name="cy_result_count">匹配结果 (%1$d)</string>
     <string name="cy_tone_prefix">声调：</string>
     <string name="cy_no_result">未检索到对应结果</string>
     <string name="cy_second_search_bar">在上一次 %1$d 条结果中筛出</string>
     <string name="cy_second_search">二次检索</string>
+    <!-- v3.2：三组同屏常显 + 手机端折叠 -->
+    <string name="cy_hint_tone_group">每字 1~4</string>
+    <string name="cy_hint_pinyin_group">完整拼音，也可只填声母 / 韵母</string>
+    <string name="cy_hint_char_group">每字一个汉字</string>
+    <string name="cy_form_hint">三组可任意组合：同一位置填了多种时需同时满足，整组留空表示不限</string>
+    <string name="cy_cond_label">检索条件</string>
+    <string name="cy_cond_expand">展开修改</string>
+    <string name="cy_cond_collapse">收起</string>
+    <!-- 折叠摘要：按位次列「第 1 位 声 1 拼 bei 字 背」 -->
+    <string name="cy_sum_pos">第 %1$d 位 %2$s</string>
+    <string name="cy_sum_tone">声 %1$s</string>
+    <string name="cy_sum_pinyin">拼 %1$s</string>
+    <string name="cy_sum_char">字 %1$s</string>
 
     <!-- 诗词检索（山石雅集第 15 题） -->
     <string name="sc_title">山石雅集第 15 题</string>
@@ -59,6 +72,19 @@
     <string name="ocr_need_image">没能读到这张图片，请换一张试试</string>
     <string name="ocr_rescue_fill">识别可能有误：已按题库补上「%1$s」缺的字，请对照截图核对</string>
     <string name="ocr_rescue_match">识别可能有误：已按题库匹配到「%1$s」，请对照截图核对</string>
+    <!-- v3.2：选图后先裁切 -->
+    <string name="ocr_crop_title">确认识别范围</string>
+    <string name="ocr_crop_hint">拖动方框，把完整的 6 列 × 5 行字格框进来（也可以拖动边框自由调整比例）</string>
+    <string name="ocr_crop_confirm">确认裁切</string>
+    <string name="ocr_crop_reset">重新框选</string>
+    <string name="ocr_crop_cancel">取消</string>
+    <string name="ocr_crop_auto">已自动框出字格</string>
+    <string name="ocr_crop_manual">没找到字格，请手动框选</string>
+    <string name="ocr_preview_hint">识别用的图片 · 点一下可重新裁切</string>
+    <string name="ocr_preview_cd">识别用的图片</string>
+    <string name="ocr_preview_empty">这张图片没有 6×5 字格，请换一张</string>
+    <string name="ocr_crop_detecting">正在定位字格…</string>
+    <string name="ocr_crop_failed">这张图片打不开，请换一张</string>
 
     <!-- 信息（大标题右边的图标）：软件信息 + 使用方法 -->
     <string name="info_button">信息</string>
@@ -67,7 +93,7 @@
     <string name="info_version">版本 %1$s ｜ Android 10 及以上 ｜ 完全离线</string>
     <string name="info_stats">题库：成语 %1$d 条 · 诗词 %2$d 条 · 名士 %3$d 位</string>
     <string name="info_close">关闭</string>
-    <string name="info_body">【这是什么】\n《忘川风华录》「山石雅集」与「众里寻他」三类检索题的离线查询工具。题库内嵌在 App 里，不联网、不申请任何权限、不用登录。\n\n【成语检索 · 山石雅集第 14 题】\n· 三个页签：拼音 / 声调 / 单字，各 4 个格子，对应成语的第 1~4 个字\n· 拼音模糊匹配，声调填 1~4，单字填一个汉字；留空的格子表示这一位不限\n· 点「检索」出结果：每条显示成语 / 带调拼音 / 声调，填过的位次会标绿\n· 结果多于一条时可以「二次检索」：在上一次的结果里接着筛，一层层缩小范围\n· 检索键在第一次出结果后自动收起，点「清空所有」回到初始状态时恢复\n\n【诗词检索 · 山石雅集第 15 题】\n· 6×5 = 30 个格子，每格一个汉字；点格子后直接打字（接外接键盘可用方向键移动）\n· 点「开始检索」，程序找出能由格中字拼出的诗句，顺序不限\n· 命中的字会在格子里标绿并标上 ①②③④⑤，表示这几个字取自哪一格\n\n【诗词检索 · 图片识别】\n· 点「拍照识别」或「相册识别」，把带 6×5 字格的图片交给程序\n· 程序会自动找出 6×5 字格、认出 30 个汉字填进去，并直接开始检索\n· 识别用的是 ML Kit 中文文字识别：模型已内嵌，离线可用，图片不会离开手机\n· 认错个别字可以直接改：点那一格改掉，再点「开始检索」\n识别率高的图片：字格完整（连边框一起拍/截）、尽量用原图别用压缩过的转发图、别拍得太斜、深色格子配浅色字也能认\n\n【名士检索 · 众里寻他】\n· 九种条件：朝代 / 爱好 / 社团 / 品阶 / 职业 / 生逢 / 出身·身世 / 技能 / 其他描述\n· 前四种点开是滚轮，其余五种是输入框，都支持模糊匹配；条件可以叠加\n· 结果多于一条时可以「二次检索」继续缩小范围；点结果里的任意一行看该名士的全部描述\n· 右上角「检索 N 次」在点「清空所有」时归零\n\n【关于题库与版权】\n· 题库来源于微博 @蓝在寻（原整理者），本程序只做了格式转换，不对题库内容主张权利\n· 《忘川风华录》相关内容版权归网易所有；本程序是非商业同人工具，不含任何游戏美术 / 音频资源\n· 如权利人认为有不妥，请在项目仓库留言，会立即移除\n\n【隐私】\n· 不联网、不收集任何数据、没有统计也没有广告\n· 图片识别全部在本机完成，图片不会上传到任何地方</string>
+    <string name="info_body">【这是什么】\n《忘川风华录》「山石雅集」与「众里寻他」三类检索题的离线查询工具。题库内嵌在 App 里，不联网、不申请任何权限、不用登录。\n\n【成语检索 · 山石雅集第 14 题】\n· 三组输入同屏：声调 / 拼音 / 单字，各 4 格，对应成语的第 1~4 个字\n· 声调填 1~4；拼音模糊匹配，也可以只填声母或韵母；单字填一个汉字；留空的格子表示这一位不限\n· 三组可任意组合：同一位置填了多种时需同时满足，整组留空表示不限\n· 点「检索」出结果：每条按 声调 / 拼音 / 单字 三行逐字对齐显示，填过的位次会标绿\n· 手机端出结果后条件区自动折叠成一行摘要（把空间让给结果），点上方的摘要可展开继续改；清空 / 二次检索等按键保留\n· 「二次检索」在上一次的结果里接着筛，一层层缩小范围；「清空当前」退回上一层\n· 检索键在第一次出结果后自动收起，点「清空所有」回到初始状态时恢复\n\n【诗词检索 · 山石雅集第 15 题】\n· 6×5 = 30 个格子，每格一个汉字；点格子后直接打字（接外接键盘可用方向键移动）\n· 点「开始检索」，程序找出能由格中字拼出的诗句，顺序不限\n· 命中的字会在格子里标绿并标上 ①②③④⑤，表示这几个字取自哪一格\n\n【诗词检索 · 图片识别】\n· 点「拍照识别」或「相册识别」，把带 6×5 字格的图片交给程序\n· 先出预览：程序已自动框出字格，可拖动框体或四角调整（比例不限），把完整的 6 列 × 5 行框进来，再点「确认裁切」\n· 随后自动认出 30 个汉字填进格子并直接开始检索；识别用的那张图显示在格子下方，点它可重新裁切\n· 识别用的是 ML Kit 中文文字识别：模型已内嵌，离线可用，图片不会离开手机\n· 认错个别字可以直接改：点那一格改掉，再点「开始检索」\n· 识别率高的图片：字格完整（连边框一起拍/截）、尽量用原图别用压缩过的转发图、别拍得太斜、深色格子配浅色字也能认\n\n【名士检索 · 众里寻他】\n· 九种条件：朝代 / 爱好 / 社团 / 品阶 / 职业 / 生逢 / 出身·身世 / 技能 / 其他描述\n· 朝代按历史时间顺序从上到下排列（「梦」排在最下面）；其余选项按拼音首字母 A~Z 排列\n· 前四种点开是滚轮，其余五种是输入框，都支持模糊匹配；条件可以叠加\n· 结果多于一条时可以「二次检索」继续缩小范围；点结果里的任意一行看该名士的全部描述\n· 右上角「检索 N 次」在点「清空所有」时归零\n\n【关于题库与版权】\n· 题库来源于微博 @蓝在寻（原整理者），本程序只做了格式转换，不对题库内容主张权利\n· 《忘川风华录》相关内容版权归网易所有；本程序是非商业同人工具，不含任何游戏美术 / 音频资源\n· 如权利人认为有不妥，请在项目仓库留言，会立即移除\n\n【隐私】\n· 不联网、不收集任何数据、没有统计也没有广告\n· 图片识别全部在本机完成，图片不会上传到任何地方</string>
 
     <!-- 名士检索（众里寻他） -->
     <string name="ms_title">众里寻他</string>

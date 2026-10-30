@@ -1,5 +1,6 @@
 package com.wangchuan.fhlsearch.ui
 
+import android.content.res.Configuration
 import android.os.Bundle
 import android.text.InputFilter
 import android.text.InputType
@@ -9,8 +10,6 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.tabs.TabLayout
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.wangchuan.fhlsearch.FhlApp
@@ -19,7 +18,8 @@ import com.wangchuan.fhlsearch.data.ChengyuItem
 import com.wangchuan.fhlsearch.databinding.FragmentFhlChengyuBinding
 import com.wangchuan.fhlsearch.databinding.ViewFhlResultBinding
 import com.wangchuan.fhlsearch.logic.ChengyuLogic
-import com.wangchuan.fhlsearch.logic.CyMode
+import com.wangchuan.fhlsearch.logic.CyKind
+import com.wangchuan.fhlsearch.logic.CyResult
 import com.wangchuan.fhlsearch.ui.sheet.InfoSheetFragment
 import com.wangchuan.fhlsearch.util.PinyinTone
 import com.wangchuan.fhlsearch.util.Toasts
@@ -27,37 +27,45 @@ import com.wangchuan.fhlsearch.util.Toasts
 /**
  * 模块一：成语检索（山石雅集第 14 题）
  *
- * 需求要点：
- *  - 拼音 / 声调 / 单字 三种模式，各 4 个输入框；拼音模糊，声调与单字精确；
- *  - 层级检索：首次在全库筛，之后在上一层结果里筛；
- *  - 结果里把用户填了内容的位次，在汉字 / 拼音 / 声调三处同时标绿；
- *  - 按键规则：≥2 条给"清空所有 / 清空当前 / 二次检索"，=1 条或 0 条不给"二次检索"；
- *  - 检索键显隐：首次检索出结果后自动收起（之后都走"二次检索"），
- *    「清空所有」/「清空当前」退回初始状态时自动恢复。
+ * 需求要点（v3.2 起）：
+ *  - 声调 / 拼音 / 单字 三组**同屏常显**，每组 4 格，对应成语的第 1~4 个字；
+ *    不再用「拼音 / 声调 / 单字」页签切换；
+ *  - 检索时三组条件**同时**生效：同一位置填了多种时需同时满足，整组留空表示不限；
+ *  - 结果逐字对齐：声调 / 拼音 / 单字 从上到下三行、靠左，填过的位次标绿；
+ *  - 检索完成后输入框内容**保留**；层级检索（二次检索在上一层结果里筛）逻辑不变；
+ *  - 手机端出结果后输入区自动折叠成一行条件摘要（按键仍在），点摘要可展开继续改。
  */
 class ChengyuFragment : Fragment(), ResultHost {
 
     private var _b: FragmentFhlChengyuBinding? = null
     private val b get() = _b!!
 
-    private val ets = ArrayList<TextInputEditText>(4)
-    private val tils = ArrayList<TextInputLayout>(4)
+    /** 三组的顺序＝界面上从上到下的顺序：声调 → 拼音 → 单字 */
+    private val kinds = listOf(CyKind.TONE, CyKind.PINYIN, CyKind.CHAR)
+
+    /** 每种各 4 格（第 i 格对应成语第 i+1 个字） */
+    private val etGrid = LinkedHashMap<CyKind, List<TextInputEditText>>()
+    private val tilGrid = LinkedHashMap<CyKind, List<TextInputLayout>>()
 
     private lateinit var result: ResultView
 
     private var all: List<ChengyuItem> = emptyList()
-    private var mode = CyMode.PINYIN
-
-    /** 各模式各自记住的输入内容（切模式不丢内容） */
-    private val modeInputs = HashMap<CyMode, List<String>>()
 
     /** 检索层级栈：pool 为该层的结果范围 */
     private val levels = ArrayList<List<ChengyuItem>>()
 
     /** 每一层对应的"命中位次"：退回上一层时要把绿色标注一并恢复 */
-    private val levelHits = ArrayList<Set<Int>>()
+    private val levelHits = ArrayList<List<Set<CyKind>>>()
 
     private var searchCount = 0
+
+    /** 用户是否手动展开了条件区（折叠后点摘要切换） */
+    private var formExpanded = false
+
+    /** 手机单栏才折叠；平板双栏本来就有地方放条件 */
+    private val isPhoneLayout: Boolean
+        get() = resources.configuration.smallestScreenWidthDp != Configuration.SMALLEST_SCREEN_WIDTH_DP_UNDEFINED &&
+            resources.configuration.smallestScreenWidthDp < 600
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?,
@@ -75,12 +83,14 @@ class ChengyuFragment : Fragment(), ResultHost {
         result.secondSearchEnabled = true
         result.showInitial(getString(R.string.empty_chengyu))
 
-        buildTabs()
         buildInputs()
         updateCountText()
 
         b.btnSearch.setOnClickListener { doSearch() }
-        updateSearchButton()      // 初始状态：检索键显示
+        b.layCondSummary.setOnClickListener { onSummaryClick() }
+
+        formExpanded = false
+        syncFormState()           // 初始状态：无结果 → 条件区展开、摘要隐藏
 
         (requireActivity().application as FhlApp).whenReady { tiku ->
             if (tiku == null) {
@@ -93,126 +103,178 @@ class ChengyuFragment : Fragment(), ResultHost {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        etGrid.clear()
+        tilGrid.clear()
         _b = null
     }
 
     // ---------------------------------------------------------------- 构建控件
-    private fun buildTabs() {
-        val names = listOf(R.string.cy_mode_pinyin, R.string.cy_mode_tone, R.string.cy_mode_char)
-        names.forEachIndexed { i, res ->
-            val tab = b.tabMode.newTab().setText(res)
-            b.tabMode.addTab(tab, i == 0)
-        }
-        b.tabMode.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-            override fun onTabSelected(tab: TabLayout.Tab) {
-                // 切换模式前先保存当前模式的内容，再恢复目标模式的内容
-                modeInputs[mode] = currentCells()
-                mode = CyMode.entries[tab.position]
-                applyMode()
-            }
-
-            override fun onTabUnselected(tab: TabLayout.Tab) = Unit
-            override fun onTabReselected(tab: TabLayout.Tab) = Unit
-        })
-    }
-
+    /**
+     * 三组各生成 4 个输入框（布局见 item_fhl_cy_input.xml / view_fhl_cy_form.xml）。
+     * 三组常显，所以每组的键盘类型、字数限制在生成时就固定下来，不再随页签切换。
+     */
     private fun buildInputs() {
-        b.layInputs.removeAllViews()
-        ets.clear()
-        tils.clear()
-        // 需求：四个输入框分别对应成语的第 1~4 个字
-        for (i in 0 until 4) {
-            val item = layoutInflater.inflate(R.layout.item_fhl_cy_input, b.layInputs, false)
-            val til = item as TextInputLayout
-            val et = item.findViewById<TextInputEditText>(R.id.etCell)
-            val lp = til.layoutParams as LinearLayout.LayoutParams
-            lp.marginStart = if (i == 0) 0 else dp(5)
-            lp.marginEnd = if (i == 3) 0 else dp(5)
-            til.layoutParams = lp
-            et.setOnEditorActionListener { _, _, _ ->
-                doSearch(); true
+        etGrid.clear()
+        tilGrid.clear()
+        kinds.forEach { kind ->
+            val row = when (kind) {
+                CyKind.TONE -> b.form.layTone
+                CyKind.PINYIN -> b.form.layPinyin
+                CyKind.CHAR -> b.form.layChar
             }
-            et.doAfterTextChanged {
-                til.error = null
-                til.setBoxBackgroundColorResource(R.color.fhl_input_fill)
-            }
-            b.layInputs.addView(til)
-            ets.add(et)
-            tils.add(til)
-        }
-        applyMode()
-    }
+            row.removeAllViews()
+            val ets = ArrayList<TextInputEditText>(ChengyuLogic.SLOTS)
+            val tils = ArrayList<TextInputLayout>(ChengyuLogic.SLOTS)
+            for (i in 0 until ChengyuLogic.SLOTS) {
+                val item = layoutInflater.inflate(R.layout.item_fhl_cy_input, row, false)
+                val til = item as TextInputLayout
+                val et = item.findViewById<TextInputEditText>(R.id.etCell)
+                val lp = til.layoutParams as LinearLayout.LayoutParams
+                lp.marginStart = if (i == 0) 0 else dp(5)
+                lp.marginEnd = if (i == ChengyuLogic.SLOTS - 1) 0 else dp(5)
+                til.layoutParams = lp
 
-    /** 按当前模式设置输入限制与提示 */
-    private fun applyMode() {
-        val saved = modeInputs[mode] ?: listOf("", "", "", "")
-        val hintRes = when (mode) {
-            CyMode.PINYIN -> R.string.cy_hint_pinyin
-            CyMode.TONE -> R.string.cy_hint_tone
-            CyMode.CHAR -> R.string.cy_hint_char
-        }
-        ets.forEachIndexed { i, et ->
-            et.filters = arrayOf(
-                InputFilter.LengthFilter(
-                    when (mode) {
-                        CyMode.PINYIN -> 6
-                        CyMode.TONE -> 1
-                        CyMode.CHAR -> 1
-                    }
+                et.filters = arrayOf(
+                    InputFilter.LengthFilter(maxLen(kind))
                 )
-            )
-            et.inputType = InputType.TYPE_CLASS_TEXT
-            tils[i].hint = getString(hintRes)
-            tils[i].error = null
-            tils[i].setBoxBackgroundColorResource(R.color.fhl_input_fill)
-            if (et.text?.toString() != saved[i]) et.setText(saved[i])
+                et.inputType = if (kind == CyKind.TONE) {
+                    InputType.TYPE_CLASS_NUMBER
+                } else {
+                    InputType.TYPE_CLASS_TEXT
+                }
+                til.hint = getString(hintOf(kind))
+                et.setOnEditorActionListener { _, _, _ ->
+                    doSearch(); true
+                }
+                et.doAfterTextChanged {
+                    til.error = null
+                    til.setBoxBackgroundColorResource(R.color.fhl_input_fill)
+                }
+                row.addView(til)
+                ets.add(et)
+                tils.add(til)
+            }
+            etGrid[kind] = ets
+            tilGrid[kind] = tils
         }
     }
 
-    private fun currentCells(): List<String> = ets.map { it.text?.toString().orEmpty().trim() }
+    private fun maxLen(kind: CyKind): Int = when (kind) {
+        CyKind.PINYIN -> 6
+        CyKind.TONE -> 1
+        CyKind.CHAR -> 1
+    }
+
+    private fun hintOf(kind: CyKind): Int = when (kind) {
+        CyKind.PINYIN -> R.string.cy_hint_pinyin
+        CyKind.TONE -> R.string.cy_hint_tone
+        CyKind.CHAR -> R.string.cy_hint_char
+    }
+
+    private fun cellsOf(kind: CyKind): List<String> =
+        etGrid[kind].orEmpty().map { it.text?.toString().orEmpty().trim() }
+
+    // ---------------------------------------------------------------- 条件区折叠
+    /**
+     * 条件区的三种状态（只有手机单栏会折叠，平板一直显示）：
+     *  - 还没有结果：摘要隐藏、条件区展开；
+     *  - 出结果后：条件区收起成一行「检索条件」摘要，按键留在结果区上方；
+     *  - 点摘要：在"收起"与"展开修改"之间切换，展开时摘要仍在（可以再收起）。
+     */
+    private fun syncFormState() {
+        val phone = isPhoneLayout
+        val hasResult = levels.isNotEmpty()
+        val showSummary = phone && hasResult
+        val showForm = !phone || !hasResult || formExpanded
+
+        b.layForm.visibility = if (showForm) View.VISIBLE else View.GONE
+        b.layCondSummary.visibility = if (showSummary) View.VISIBLE else View.GONE
+        // 第十一轮的规则照旧：出过结果就先收起「检索」，接着筛用上方的「二次检索」；
+        // 清空到没有结果时再把它放出来（否则用户改完条件不知道点哪儿）
+        b.btnSearch.visibility = if (hasResult) View.GONE else View.VISIBLE
+        if (showSummary) {
+            b.tvCondSummary.text = summaryText()
+            b.tvSummaryToggle.setText(
+                if (formExpanded) R.string.cy_cond_collapse else R.string.cy_cond_expand
+            )
+        }
+    }
+
+    private fun onSummaryClick() {
+        if (!isPhoneLayout) return
+        formExpanded = !formExpanded
+        syncFormState()
+    }
+
+    /**
+     * 折叠摘要里的条件文字（对齐演示稿「第 1 位 声 1」的写法）：
+     * 只列填过的位次，同一位置填了多种就并在一行。
+     */
+    private fun summaryText(): CharSequence {
+        val tones = cellsOf(CyKind.TONE)
+        val pinyins = cellsOf(CyKind.PINYIN)
+        val chars = cellsOf(CyKind.CHAR)
+        val parts = ArrayList<String>(ChengyuLogic.SLOTS)
+        for (i in 0 until ChengyuLogic.SLOTS) {
+            val bits = ArrayList<String>(3)
+            if (tones[i].isNotEmpty()) bits.add(getString(R.string.cy_sum_tone, tones[i]))
+            if (pinyins[i].isNotEmpty()) bits.add(getString(R.string.cy_sum_pinyin, pinyins[i]))
+            if (chars[i].isNotEmpty()) bits.add(getString(R.string.cy_sum_char, chars[i]))
+            if (bits.isNotEmpty()) {
+                parts.add(getString(R.string.cy_sum_pos, i + 1, bits.joinToString(" ")))
+            }
+        }
+        return parts.joinToString("　")
+    }
+
+    private fun labelOf(kind: CyKind): Int = when (kind) {
+        CyKind.PINYIN -> R.string.cy_mode_pinyin
+        CyKind.TONE -> R.string.cy_mode_tone
+        CyKind.CHAR -> R.string.cy_mode_char
+    }
 
     // ---------------------------------------------------------------- 检索
     /**
-     * 校验当前 4 格输入：
-     *  - 有非法字符 → 标红该格 + 提示"非法字符"，返回 null；
-     *  - 单字模式多输 → 只留第一个字；
-     *  - 全空 → 提示"请至少填写一个条件"，返回 null；
-     * 通过则返回 trim 后的 4 格内容。
+     * 校验三组共 12 格：
+     *  - 任一组有非法字符 → 标红该格 + 提示"非法字符"，返回 null；
+     *  - 单字多输 → 只留第一个字；
+     *  - 三组全空 → 提示"请至少填写一个条件"，返回 null。
      */
-    private fun validatedCells(): List<String>? {
+    private fun validated(): Boolean {
         if (all.isEmpty()) {
             Toasts.show(requireContext(), getString(R.string.tip_tiku_error))
-            return null
+            return false
         }
-        val cells = currentCells()
-        val bad = ChengyuLogic.firstIllegal(mode, cells)
-        if (bad >= 0) {
-            tils[bad].error = getString(R.string.tip_illegal_char)
-            tils[bad].setBoxBackgroundColorResource(R.color.fhl_vermilion_tint)
-            Toasts.show(requireContext(), getString(R.string.tip_illegal_char))
-            return null
-        }
-        // 单字模式：多输的只留第一个字（与需求一致）
-        if (mode == CyMode.CHAR) {
-            ets.forEachIndexed { i, et ->
-                val t = et.text?.toString().orEmpty()
-                if (t.length > 1) {
-                    et.setText(t.substring(0, 1))
-                    et.setSelection(1)
+        for (kind in kinds) {
+            val bad = ChengyuLogic.firstIllegal(kind, cellsOf(kind))
+            if (bad >= 0) {
+                tilGrid[kind]?.getOrNull(bad)?.apply {
+                    error = getString(R.string.tip_illegal_char)
+                    setBoxBackgroundColorResource(R.color.fhl_vermilion_tint)
                 }
+                Toasts.show(requireContext(), getString(R.string.tip_illegal_char))
+                return false
             }
         }
-        if (ChengyuLogic.isEmpty(currentCells())) {
-            Toasts.show(requireContext(), getString(R.string.tip_need_condition))
-            return null
+        // 单字组多输的只留第一个字（长度限制已挡掉大部分，粘贴进来时兜底）
+        etGrid[CyKind.CHAR].orEmpty().forEach { et ->
+            val t = et.text?.toString().orEmpty()
+            if (t.length > 1) {
+                et.setText(t.substring(0, 1))
+                et.setSelection(1)
+            }
         }
-        return currentCells()
+        if (ChengyuLogic.isEmpty(cellsOf(CyKind.TONE), cellsOf(CyKind.PINYIN), cellsOf(CyKind.CHAR))) {
+            Toasts.show(requireContext(), getString(R.string.tip_need_condition))
+            return false
+        }
+        return true
     }
 
     /** 首次检索：全库筛；之后按层级，在上一层结果里筛 */
     private fun doSearch() {
-        val cells = validatedCells() ?: return
-        runSearch(cells, levels.lastOrNull(), narrowedFrom = null)
+        if (!validated()) return
+        runSearch(levels.lastOrNull(), narrowedFrom = null)
     }
 
     /**
@@ -224,61 +286,49 @@ class ChengyuFragment : Fragment(), ResultHost {
             doSearch()
             return
         }
-        val cells = validatedCells() ?: return
+        if (!validated()) return
         val pool = levels.last()
-        runSearch(cells, pool, narrowedFrom = pool.size)
+        runSearch(pool, narrowedFrom = pool.size)
     }
 
     /** 检索并展示（两个入口共用） */
-    private fun runSearch(
-        cells: List<String>,
-        pool: List<ChengyuItem>?,
-        narrowedFrom: Int?,
-    ) {
-        val res = ChengyuLogic.search(mode, cells, all, pool)
+    private fun runSearch(pool: List<ChengyuItem>?, narrowedFrom: Int?) {
+        val res = ChengyuLogic.search(
+            cellsOf(CyKind.TONE),
+            cellsOf(CyKind.PINYIN),
+            cellsOf(CyKind.CHAR),
+            all,
+            pool,
+        )
 
         searchCount++
         // 没命中就不入栈：否则候选范围被清空，之后怎么改条件都搜不出来
         if (res.items.isNotEmpty()) {
             levels.add(res.items)
-            levelHits.add(res.hitPositions)
+            levelHits.add(res.hitKinds)
+            formExpanded = false     // 新结果出来 → 回到折叠状态，把地方让给结果
         }
-        modeInputs[mode] = cells
         updateCountText()
         render(res, narrowedFrom)
-        updateSearchButton()      // 出结果了 → 收起检索键；没出结果（层没入栈）→ 保持显示
+        syncFormState()              // 出结果 → 折叠；没出结果 → 保持展开
     }
 
-    /**
-     * 检索键的显隐：
-     *  - 还没检索过、或已经退回初始层（没有可继续筛的结果）→ 显示；
-     *  - 一旦检索出结果就自动收起：此后"检索"与"二次检索"做的事完全一样
-     *    （都是在这一层结果里筛），留着只是白占一块地方，还把结果区挤小；
-     *  - 「清空所有」、以及「清空当前」退到最后一层之下时 → 自动恢复。
-     *
-     * 注意：没命中的检索不入层（levels 仍为空），所以那种情况下检索键保持显示，
-     * 用户可以直接改条件再按——不会被"藏起来的键"卡住。
-     */
-    private fun updateSearchButton() {
-        b.btnSearch.visibility = if (levels.isEmpty()) View.VISIBLE else View.GONE
-    }
-
-    private fun render(res: com.wangchuan.fhlsearch.logic.CyResult, narrowedFrom: Int? = null) {
+    private fun render(res: CyResult, narrowedFrom: Int? = null) {
         if (res.items.isEmpty()) {
             result.showEmpty(getString(R.string.cy_no_result))
             return
         }
-        val rows = res.items.map { item -> resultRow(item, res.hitPositions) }
+        val rows = res.items.map { item -> resultRow(item, res.hitKinds) }
         val countText = getString(R.string.cy_result_count, res.items.size)
         val secondBar = narrowedFrom?.let { getString(R.string.cy_second_search_bar, it) }
         result.show(rows, countText, secondBar)
     }
 
     /**
-     * 一行结果 = 一张三行卡片（图一样式）：
-     *   成语 / 带调拼音 / 声调：数字；被填过的位次在三处同时标绿。
+     * 一行结果 = 一张四列卡片（v3.2 逐字对齐）：
+     *   每列竖排 声调 / 拼音 / 单字；被填过的位次在整列标绿。
      */
-    private fun resultRow(item: ChengyuItem, hits: Set<Int>): ResultRow {
+    private fun resultRow(item: ChengyuItem, hits: List<Set<CyKind>>): ResultRow {
         val pinyin = item.pinyin.indices.map { PinyinTone.mark(item.pinyin[it] + item.tone[it]) }
         return ResultRow(
             // 长按复制用的整行文本
@@ -301,17 +351,17 @@ class ChengyuFragment : Fragment(), ResultHost {
         searchCount = 0
         levels.clear()
         levelHits.clear()
-        modeInputs.clear()
-        mode = CyMode.PINYIN
-        b.tabMode.selectTab(b.tabMode.getTabAt(0))
-        ets.forEachIndexed { i, et ->
-            et.setText("")
-            tils[i].error = null
-            tils[i].setBoxBackgroundColorResource(R.color.fhl_input_fill)
+        formExpanded = false
+        kinds.forEach { kind ->
+            etGrid[kind].orEmpty().forEach { it.setText("") }
+            tilGrid[kind].orEmpty().forEach {
+                it.error = null
+                it.setBoxBackgroundColorResource(R.color.fhl_input_fill)
+            }
         }
         result.showInitial(getString(R.string.empty_chengyu))
         updateCountText()
-        updateSearchButton()      // 回到初始状态 → 检索键恢复
+        syncFormState()          // 回到初始状态 → 条件区展开、摘要隐藏
     }
 
     override fun onClearCurrent() {
@@ -323,14 +373,15 @@ class ChengyuFragment : Fragment(), ResultHost {
         val prev = levels.lastOrNull()
         if (prev == null) {
             result.showInitial(getString(R.string.empty_chengyu))
+            formExpanded = false
         } else {
             result.show(
-                prev.map { resultRow(it, levelHits.lastOrNull() ?: emptySet()) },
+                prev.map { resultRow(it, levelHits.lastOrNull() ?: emptyList()) },
                 getString(R.string.cy_result_count, prev.size),
                 null,
             )
         }
-        updateSearchButton()      // 退到最后一层之下 → 检索键恢复
+        syncFormState()
     }
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()

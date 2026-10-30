@@ -66,16 +66,28 @@ class MingshiFragment : Fragment(), ResultHost {
 
     private var searchCount = 0
 
+    /**
+     * 选项型条件的显示顺序（v3.2）：
+     *  - 朝代按**历史时间顺序**从上到下，非史实的「梦」放最下面；
+     *  - 其余选项按**拼音首字母 A~Z**从上到下（同首字母比后续字母，短的在前）。
+     * 这里只是滚轮的显示顺序，不影响检索结果（[MingshiLogic] 的匹配规则不变）。
+     */
     private val dynastyOptions = listOf(
-        "汉", "明", "秦", "三国", "宋", "唐", "五代十国", "西楚", "晋", "先秦", "梦", "南北朝", "清", "元", "辽"
+        // 先秦 → 秦 → 西楚 → 汉 → 三国 → 晋 → 南北朝 → 唐 → 五代十国 → 宋 → 辽 → 元 → 明 → 清 → 梦
+        // （宋辽同期，按演示稿的顺序把宋排在辽前；「梦」非史实朝代，放最末）
+        "先秦", "秦", "西楚", "汉", "三国", "晋", "南北朝", "唐",
+        "五代十国", "宋", "辽", "元", "明", "清", "梦",
     )
     private val loveOptions = listOf(
-        "博文", "乐舞", "品茗", "赏玩", "食珍", "书画", "雅宴", "演武", "弈棋", "妆饰"
+        // bo wen / pin ming / shang wan / shi zhen / shu hua / ya yan / yan wu / yi qi / yue wu / zhuang shi
+        "博文", "品茗", "赏玩", "食珍", "书画", "雅宴", "演武", "弈棋", "乐舞", "妆饰",
     )
     private val clubOptions = listOf(
-        "百家书院", "千工苑", "金戈馆", "容华社", "棠梨坊", "饕餮居", "五湖商社", "逸趣社", "无"
+        // bai jia shu yuan / jin ge guan / qian gong yuan / rong hua she / tang li fang
+        // tao tie ju / wu / wu hu shang she / yi qu she
+        "百家书院", "金戈馆", "千工苑", "容华社", "棠梨坊", "饕餮居", "无", "五湖商社", "逸趣社",
     )
-    private val rankOptions = listOf("天", "地", "玄")
+    private val rankOptions = listOf("地", "天", "玄")   // di / tian / xuan
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?,

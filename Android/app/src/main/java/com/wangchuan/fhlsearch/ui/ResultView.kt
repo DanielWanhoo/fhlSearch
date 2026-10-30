@@ -17,6 +17,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.wangchuan.fhlsearch.R
 import com.wangchuan.fhlsearch.databinding.ViewFhlActionsBinding
 import com.wangchuan.fhlsearch.databinding.ViewFhlResultBinding
+import com.wangchuan.fhlsearch.logic.ChengyuLogic
+import com.wangchuan.fhlsearch.logic.CyKind
 
 /** 结果行的三种版式 */
 enum class RowKind {
@@ -43,7 +45,8 @@ data class ResultRow(
     val cyChars: List<String> = emptyList(),
     val cyPinyin: List<String> = emptyList(),
     val cyTone: List<String> = emptyList(),
-    val cyHits: Set<Int> = emptySet(),
+    /** 每个位次被哪几组填过（v3.2：标绿分字段，声调/拼音/单字各标各的） */
+    val cyHits: List<Set<CyKind>> = emptyList(),
     /** 名士：名字与朝代分两列显示 */
     val msName: String = "",
     val msDynasty: String = "",
@@ -214,14 +217,51 @@ class ResultView(
             tv.text = highlight(row.text, row.highlights, v.context)
         }
 
+        /**
+         * 成语卡片（v3.2）：4 列，每列一个字，竖排 声调 / 拼音 / 单字，逐字对齐、靠左。
+         * 用户填过的位次用绿色标出来（声调小标换绿底，拼音与单字换绿字）。
+         */
         private fun bindChengyu(v: View, row: ResultRow) {
-            v.findViewById<TextView>(R.id.tvCyWord).text =
-                mark(row.cyChars, row.cyHits, "", null, v.context)
-            v.findViewById<TextView>(R.id.tvCyPinyin).text =
-                mark(row.cyPinyin, row.cyHits, " ", null, v.context)
-            v.findViewById<TextView>(R.id.tvCyTone).text =
-                mark(row.cyTone, row.cyHits, " ", v.context.getString(R.string.cy_tone_prefix), v.context)
+            val cols = v.findViewById<ViewGroup>(R.id.layCols)
+            // 每次 view 复用只建一次列，之后只换文字
+            if (cols.childCount == 0) {
+                val inflater = LayoutInflater.from(v.context)
+                repeat(ChengyuLogic.SLOTS) {
+                    cols.addView(inflateColumn(inflater, cols))
+                }
+            }
+            val ctx = v.context
+            val chipIdle = ContextCompat.getDrawable(ctx, R.drawable.bg_fhl_tone_chip)
+            val chipHit = ContextCompat.getDrawable(ctx, R.drawable.bg_fhl_tone_chip_hit)
+            val colorHit = ContextCompat.getColor(ctx, R.color.fhl_green_text)
+            val colorSub = ContextCompat.getColor(ctx, R.color.fhl_ink_sub)
+            val colorInk = ContextCompat.getColor(ctx, R.color.fhl_ink)
+
+            for (i in 0 until ChengyuLogic.SLOTS) {
+                val col = cols.getChildAt(i)
+                val hits = row.cyHits.getOrNull(i) ?: emptySet()
+                val toneHit = hits.contains(CyKind.TONE)
+                val pinyinHit = hits.contains(CyKind.PINYIN)
+                val charHit = hits.contains(CyKind.CHAR)
+                col.findViewById<TextView>(R.id.tvTone).apply {
+                    text = row.cyTone.getOrNull(i).orEmpty()
+                    background = if (toneHit) chipHit else chipIdle
+                    setTextColor(if (toneHit) colorHit else colorSub)
+                }
+                col.findViewById<TextView>(R.id.tvPinyin).apply {
+                    text = row.cyPinyin.getOrNull(i).orEmpty()
+                    setTextColor(if (pinyinHit) colorHit else colorSub)
+                }
+                col.findViewById<TextView>(R.id.tvChar).apply {
+                    text = row.cyChars.getOrNull(i).orEmpty()
+                    setTextColor(if (charHit) colorHit else colorInk)
+                }
+            }
         }
+
+        private fun inflateColumn(inflater: LayoutInflater, parent: ViewGroup): View =
+            inflater.inflate(R.layout.item_fhl_cy_col, parent, false)
+
 
         private fun bindMingshi(v: View, row: ResultRow) {
             v.findViewById<TextView>(R.id.tvMsName).text = row.msName

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 成语结果的一列（一个字）：声调小标 / 拼音 / 单字，从上到下，靠左
+     ResultView 把它 inflate 4 份加进 item_fhl_cy_result.xml 的 layCols 里。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/tvTone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_fhl_tone_chip"
+        android:gravity="center"
+        android:minWidth="22dp"
+        android:paddingStart="7dp"
+        android:paddingTop="1dp"
+        android:paddingEnd="7dp"
+        android:paddingBottom="1dp"
+        android:textColor="@color/fhl_ink_sub"
+        android:textSize="12sp"
+        tools:text="4" />
+
+    <TextView
+        android:id="@+id/tvPinyin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_xs"
+        android:maxLines="1"
+        android:textColor="@color/fhl_ink_sub"
+        android:textSize="@dimen/fhl_fs_body_s"
+        app:autoSizeMaxTextSize="@dimen/fhl_fs_body_s"
+        app:autoSizeMinTextSize="9sp"
+        app:autoSizeStepGranularity="1sp"
+        app:autoSizeTextType="uniform"
+        tools:text="bèi" />
+
+    <TextView
+        android:id="@+id/tvChar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:maxLines="1"
+        android:textColor="@color/fhl_ink"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        tools:text="背" />
+</LinearLayout>

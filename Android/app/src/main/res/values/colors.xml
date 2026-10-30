@@ -28,6 +28,9 @@
     <color name="fhl_ink_hint">#9C8B76</color>      <!-- 占位/提示 -->
     <color name="fhl_text_on_dark">#FBF3E4</color>  <!-- 朱砂底上的文字 -->
 
+    <!-- 图片裁切画布：深底色，让"图片外的区域"自然地暗下去 -->
+    <color name="fhl_crop_bg">#1F1A16</color>
+
     <!-- 青竹 -->
     <color name="fhl_bamboo">#3F6B4A</color>
 

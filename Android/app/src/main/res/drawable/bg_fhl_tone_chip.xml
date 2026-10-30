@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 成语结果里的声调小标（未命中）：米色圆角块 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/fhl_input_fill" />
+    <corners android:radius="6dp" />
+</shape>

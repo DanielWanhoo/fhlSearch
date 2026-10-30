@@ -2,7 +2,7 @@ package com.wangchuan.fhlsearch
 
 import com.wangchuan.fhlsearch.data.Tiku
 import com.wangchuan.fhlsearch.logic.ChengyuLogic
-import com.wangchuan.fhlsearch.logic.CyMode
+import com.wangchuan.fhlsearch.logic.CyKind
 import com.wangchuan.fhlsearch.logic.MingshiLogic
 import com.wangchuan.fhlsearch.logic.MsMode
 import com.wangchuan.fhlsearch.logic.ShiciLogic
@@ -57,57 +57,110 @@ class SearchLogicTest {
     }
 
     // ================================================================ 成语检索
+
+    /**
+     * 三组各 4 格的便捷构造：参数是"第几位填什么"（0 起）。
+     * 例如 `groups(pinyins = listOf(0 to "an"))` = 拼音第 1 格 an，其余全空。
+     */
+    private fun groups(
+        tones: List<Pair<Int, String>> = emptyList(),
+        pinyins: List<Pair<Int, String>> = emptyList(),
+        chars: List<Pair<Int, String>> = emptyList(),
+    ): Triple<List<String>, List<String>, List<String>> {
+        fun fill(v: List<Pair<Int, String>>) =
+            MutableList(ChengyuLogic.SLOTS) { "" }.also { g -> v.forEach { (i, s) -> g[i] = s } }
+        return Triple(fill(tones), fill(pinyins), fill(chars))
+    }
+
     @Test
     fun `拼音模糊匹配与命中位次`() {
-        val r = ChengyuLogic.search(CyMode.PINYIN, listOf("an", "", "", ""), chengyu)
+        val (t, p, c) = groups(pinyins = listOf(0 to "an"))
+        val r = ChengyuLogic.search(t, p, c, chengyu)
         assertEquals("拼音第 1 格 an 应为 53 条", 53, r.items.size)
         assertTrue(r.items.all { it.pinyin[0].contains("an") })
         assertEquals(setOf(0), r.hitPositions)
 
-        val r2 = ChengyuLogic.search(CyMode.PINYIN, listOf("", "du", "", ""), chengyu)
+        val (t2, p2, c2) = groups(pinyins = listOf(1 to "du"))
+        val r2 = ChengyuLogic.search(t2, p2, c2, chengyu)
         assertEquals(3, r2.items.size)
         assertTrue(r2.items.all { it.pinyin[1].contains("du") })
 
         // 大写输入同样命中（题库里 Shuang / Zhi 两处大写，且匹配大小写不敏感）
-        val r3 = ChengyuLogic.search(CyMode.PINYIN, listOf("ZH", "", "", ""), chengyu)
-        assertEquals(11, r3.items.size)
+        val (t3, p3, c3) = groups(pinyins = listOf(0 to "ZH"))
+        assertEquals(11, ChengyuLogic.search(t3, p3, c3, chengyu).items.size)
     }
 
     @Test
     fun `声调与单字精确匹配`() {
-        val tone = ChengyuLogic.search(CyMode.TONE, listOf("4", "4", "2", "1"), chengyu)
+        val (t, p, c) = groups(tones = listOf(0 to "4", 1 to "4", 2 to "2", 3 to "1"))
+        val tone = ChengyuLogic.search(t, p, c, chengyu)
         assertEquals(4, tone.items.size)
         assertTrue(tone.items.any { it.word == "暗渡陈仓" })
+        assertEquals("四格都填了，四个位次都要标绿", setOf(0, 1, 2, 3), tone.hitPositions)
 
-        val ch = ChengyuLogic.search(CyMode.CHAR, listOf("", "", "陈", ""), chengyu)
+        val (t2, p2, c2) = groups(chars = listOf(2 to "陈"))
+        val ch = ChengyuLogic.search(t2, p2, c2, chengyu)
         assertEquals(1, ch.items.size)
         assertTrue(ch.items.all { it.chars[2] == "陈" })
     }
 
     @Test
+    fun `三组条件同一位置需同时满足`() {
+        // 拼音第 1 格含 an + 声调第 1 格 1 → 26 条（单用拼音是 53 条）
+        val (t, p, c) = groups(tones = listOf(0 to "1"), pinyins = listOf(0 to "an"))
+        val both = ChengyuLogic.search(t, p, c, chengyu)
+        assertEquals(26, both.items.size)
+        assertTrue(both.items.all { it.pinyin[0].contains("an") && it.tone[0] == "1" })
+
+        // 再加单字第 1 格"一" → 7 条
+        val (t2, p2, c2) = groups(
+            tones = listOf(0 to "1"), pinyins = listOf(0 to ""), chars = listOf(0 to "一"),
+        )
+        val withChar = ChengyuLogic.search(t2, p2, c2, chengyu)
+        assertEquals(7, withChar.items.size)
+        assertTrue(withChar.items.all { it.tone[0] == "1" && it.chars[0] == "一" })
+
+        // 同一位置两组互相矛盾 → 0 条（而不是取并集）
+        val (t3, p3, c3) = groups(tones = listOf(0 to "1"), chars = listOf(0 to "安"))
+        assertEquals(0, ChengyuLogic.search(t3, p3, c3, chengyu).items.size)
+
+        // 不同位次互不干扰：声调第 1 格 3 + 单字第 4 格 梦
+        val (t4, p4, c4) = groups(tones = listOf(0 to "3"), chars = listOf(3 to "梦"))
+        val mix = ChengyuLogic.search(t4, p4, c4, chengyu)
+        assertTrue(mix.items.isNotEmpty())
+        assertTrue(mix.items.all { it.tone[0] == "3" && it.chars[3] == "梦" })
+        assertEquals(setOf(0, 3), mix.hitPositions)
+    }
+
+    @Test
     fun `层级检索在上一层结果内筛`() {
-        val lv1 = ChengyuLogic.search(CyMode.PINYIN, listOf("zh", "", "", ""), chengyu)
+        val (t, p, c) = groups(pinyins = listOf(0 to "zh"))
+        val lv1 = ChengyuLogic.search(t, p, c, chengyu)
         assertTrue(lv1.items.isNotEmpty())
-        val lv2 = ChengyuLogic.search(CyMode.CHAR, listOf("", "", "", "定"), chengyu, lv1.items)
-        assertTrue("二次检索结果必须是上一层结果的子集",
-            lv2.items.all { it in lv1.items })
+
+        val (t2, p2, c2) = groups(chars = listOf(3 to "定"))
+        val lv2 = ChengyuLogic.search(t2, p2, c2, chengyu, lv1.items)
+        assertTrue("二次检索结果必须是上一层结果的子集", lv2.items.all { it in lv1.items })
         assertTrue(lv2.items.all { it.pinyin[0].contains("zh") && it.chars[3] == "定" })
         // 同样的条件在同一层里再筛，结果不变
-        val again = ChengyuLogic.search(CyMode.CHAR, listOf("", "", "", "定"), chengyu, lv2.items)
+        val again = ChengyuLogic.search(t2, p2, c2, chengyu, lv2.items)
         assertEquals(lv2.items.size, again.items.size)
     }
 
     @Test
     fun `非法字符与空条件`() {
-        assertEquals(1, ChengyuLogic.firstIllegal(CyMode.PINYIN, listOf("an", "d4", "", "")))
-        assertEquals(-1, ChengyuLogic.firstIllegal(CyMode.PINYIN, listOf("an", "du", "", "")))
-        assertEquals(1, ChengyuLogic.firstIllegal(CyMode.TONE, listOf("1", "5", "", "")))
-        assertEquals(0, ChengyuLogic.firstIllegal(CyMode.CHAR, listOf("a", "", "", "")))
-        assertEquals(-1, ChengyuLogic.firstIllegal(CyMode.CHAR, listOf("陈", "", "", "")))
-        assertTrue(ChengyuLogic.isEmpty(listOf("", " ", "", "")))
+        assertEquals(1, ChengyuLogic.firstIllegal(CyKind.PINYIN, listOf("an", "d4", "", "")))
+        assertEquals(-1, ChengyuLogic.firstIllegal(CyKind.PINYIN, listOf("an", "du", "", "")))
+        assertEquals(1, ChengyuLogic.firstIllegal(CyKind.TONE, listOf("1", "5", "", "")))
+        assertEquals(0, ChengyuLogic.firstIllegal(CyKind.CHAR, listOf("a", "", "", "")))
+        assertEquals(-1, ChengyuLogic.firstIllegal(CyKind.CHAR, listOf("陈", "", "", "")))
+        assertTrue(ChengyuLogic.isEmpty(listOf("", " ", "", ""), listOf("", "", "", ""), listOf("", "", "", "")))
+        assertFalse(ChengyuLogic.isEmpty(listOf("", "", "", ""), listOf("", " ", "", ""), listOf("", "", "", "安")))
         var threw = false
         try {
-            ChengyuLogic.search(CyMode.PINYIN, listOf("", "", "", ""), chengyu)
+            ChengyuLogic.search(
+                listOf("", "", "", ""), listOf("", "", "", ""), listOf("", "", "", ""), chengyu,
+            )
         } catch (e: IllegalArgumentException) {
             threw = true
         }

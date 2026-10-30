@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 成语结果卡片（图一样式）：三行 —— 成语 / 带调拼音 / 声调：数字 -->
+<!-- 成语结果卡片（v3.2）：三行逐字对齐、靠左
+     每列一个成语字，竖着排：声调（小圆角标） / 拼音 / 单字，四列等宽。
+     单列内容由 item_fhl_cy_col.xml 在 ResultView 里生成 4 份。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="@dimen/fhl_gap_m"
@@ -14,31 +15,10 @@
     android:paddingTop="@dimen/fhl_gap_m"
     android:paddingBottom="@dimen/fhl_gap_m">
 
-    <TextView
-        android:id="@+id/tvCyWord"
+    <LinearLayout
+        android:id="@+id/layCols"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="@color/fhl_ink"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        tools:text="伪游云梦" />
-
-    <TextView
-        android:id="@+id/tvCyPinyin"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/fhl_gap_xs"
-        android:letterSpacing="0.02"
-        android:textColor="@color/fhl_vermilion"
-        android:textSize="@dimen/fhl_fs_body"
-        tools:text="wěi yóu yún mèng" />
-
-    <TextView
-        android:id="@+id/tvCyTone"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:textColor="@color/fhl_ink_sub"
-        android:textSize="@dimen/fhl_fs_body_s"
-        tools:text="声调：3 2 2 4" />
+        android:baselineAligned="false"
+        android:orientation="horizontal" />
 </LinearLayout>

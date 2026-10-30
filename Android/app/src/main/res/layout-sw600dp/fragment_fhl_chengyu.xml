@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 成语检索（平板双栏）：左＝检索条件，右＝检索结果 -->
+<!-- 成语检索（平板双栏）：左＝检索条件，右＝检索结果
+     v3.2：声调 / 拼音 / 单字三组同屏常显；平板两栏各有空间，不做折叠
+     （layCondSummary 保留但永不显示，只是让 ViewBinding 在两种布局里字段一致）。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
@@ -27,42 +28,67 @@
                 layout="@layout/view_fhl_header" />
 
             <LinearLayout
+                android:id="@+id/layCondSummary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_fhl_card"
-                android:orientation="vertical"
-                android:padding="@dimen/fhl_gap_m">
-
-                <com.google.android.material.tabs.TabLayout
-                    android:id="@+id/tabMode"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bg_fhl_card_soft"
-                    app:tabGravity="fill"
-                    app:tabIndicatorColor="@color/fhl_vermilion"
-                    app:tabIndicatorFullWidth="false"
-                    app:tabIndicatorHeight="3dp"
-                    app:tabMode="fixed"
-                    app:tabRippleColor="@color/fhl_gold_tint"
-                    app:tabSelectedTextColor="@color/fhl_vermilion"
-                    app:tabTextColor="@color/fhl_ink_sub" />
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="@dimen/fhl_gap_m"
+                android:visibility="gone">
 
                 <LinearLayout
-                    android:id="@+id/layInputs"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/fhl_gap_m"
-                    android:baselineAligned="false"
-                    android:orientation="horizontal" />
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvSummaryLabel"
+                        style="@style/TextFhlCaption"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/cy_cond_label" />
+
+                    <TextView
+                        android:id="@+id/tvCondSummary"
+                        style="@style/TextFhlBody"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/fhl_gap_xs"
+                        android:textColor="@color/fhl_ink" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvSummaryToggle"
+                    style="@style/TextFhlCaption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/fhl_gap_s"
+                    android:text="@string/cy_cond_expand"
+                    android:textColor="@color/fhl_vermilion" />
             </LinearLayout>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSearch"
-                style="@style/BtnFhlPrimary"
+            <LinearLayout
+                android:id="@+id/layForm"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/fhl_btn_h_large"
-                android:layout_marginTop="@dimen/fhl_gap_m"
-                android:text="@string/cy_search" />
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <include
+                    android:id="@+id/form"
+                    layout="@layout/view_fhl_cy_form" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSearch"
+                    style="@style/BtnFhlPrimary"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/fhl_btn_h_large"
+                    android:layout_marginTop="@dimen/fhl_gap_m"
+                    android:text="@string/cy_search" />
+            </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

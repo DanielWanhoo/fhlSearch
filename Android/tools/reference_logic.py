@@ -55,30 +55,33 @@ class ChengYu:
             return True
         return cell == ch
 
-    def search(self, mode, cells, pool=None):
-        """mode: 'pinyin' | 'tone' | 'char'；cells: 4 个字符串。
-        返回 (结果列表, 命中位次集合)。空条件 → 抛 ValueError（界面应提示"请至少填写一个条件"）。"""
-        cells = [c.strip() for c in cells]
-        if all(c == '' for c in cells):
+    def search(self, tones, pinyins, chars, pool=None):
+        """v3.2：声调 / 拼音 / 单字 三组**同时**生效（界面三组同屏常显）。
+
+        每组 4 个字符串，第 i 位 = 成语第 i+1 个字；某位为空表示该位不限，
+        整组留空表示这一组不参与。同一位置填了多种时需同时满足。
+        返回 (结果列表, 命中位次集合)。全空 → 抛 ValueError（界面提示"请至少填写一个条件"）。
+        """
+        tones = [c.strip() for c in tones]
+        pinyins = [c.strip() for c in pinyins]
+        chars = [c.strip() for c in chars]
+        if not any(tones) and not any(pinyins) and not any(chars):
             raise ValueError('请至少填写一个条件')
-        if all(c == '' for c in cells):
-            return [], set()
-        hits = set(i for i, c in enumerate(cells) if c != '')
+        hits = set(i for i in range(4)
+                   if tones[i] or pinyins[i] or chars[i])
         src = self.items if pool is None else pool
         out = []
         for it in src:
             ok = True
             for i in range(4):
-                c = cells[i]
-                if mode == 'pinyin':
-                    ok = self._py_ok(c, it['p'][i])
-                elif mode == 'tone':
-                    ok = self._tone_ok(c, it['t'][i])
-                elif mode == 'char':
-                    ok = self._char_ok(c, it['c'][i])
-                else:
-                    raise ValueError('未知模式: %s' % mode)
-                if not ok:
+                if tones[i] and not self._tone_ok(tones[i], it['t'][i]):
+                    ok = False
+                    break
+                if pinyins[i] and not self._py_ok(pinyins[i], it['p'][i]):
+                    ok = False
+                    break
+                if chars[i] and not self._char_ok(chars[i], it['c'][i]):
+                    ok = False
                     break
             if ok:
                 out.append(it)
@@ -87,16 +90,17 @@ class ChengYu:
         return out, hits
 
     @staticmethod
-    def validate(mode, cells):
-        """返回 (合法吗, 第几个格非法)。规则按需求 txt：出现其他符号即非法。"""
+    def validate(kind, cells):
+        """返回 (合法吗, 第几个格非法)。kind: 'tone' | 'pinyin' | 'char'。
+        规则按需求 txt：出现其他符号即非法。"""
         for i, c in enumerate(cells):
             if c == '':
                 continue
-            if mode == 'pinyin' and not re.fullmatch(r'[A-Za-z]+', c):
+            if kind == 'pinyin' and not re.fullmatch(r'[A-Za-z]+', c):
                 return False, i
-            if mode == 'tone' and not re.fullmatch(r'[1-4]', c):
+            if kind == 'tone' and not re.fullmatch(r'[1-4]', c):
                 return False, i
-            if mode == 'char' and not re.fullmatch(r'[\u4e00-\u9fff]', c):
+            if kind == 'char' and not re.fullmatch(r'[\u4e00-\u9fff]', c):
                 return False, i
         return True, -1
 
@@ -211,36 +215,45 @@ def selftest():
         if not cond:
             fails.append(msg)
 
-    print('【成语 · 拼音模糊】')
-    r, hits = cy.search('pinyin', ['an', '', '', ''])
+    print('【成语 · 拼音模糊】（v3.2：三组同屏，三组同时生效）')
+    r, hits = cy.search(['', '', '', ''], ['an', '', '', ''], ['', '', '', ''])
     ck(len(r) > 0 and all('an' in it['p'][0] for it in r), 'an 在第1格 → %d 条，且第1字拼音都含 an' % len(r))
     ck(hits == {0}, '命中位次 = {0}')
-    r2, _ = cy.search('pinyin', ['', 'du', '', ''])
+    r2, _ = cy.search(['', '', '', ''], ['', 'du', '', ''], ['', '', '', ''])
     ck(all('du' in it['p'][1] for it in r2), 'du 在第2格 → %d 条，且第2字拼音都含 du' % len(r2))
-    rl, _ = cy.search('pinyin', ['ZH', '', '', ''])
+    rl, _ = cy.search(['', '', '', ''], ['ZH', '', '', ''], ['', '', '', ''])
     ck(len(rl) > 0, '大写 ZH 也能命中 → %d 条（大小写不敏感）' % len(rl))
-    rp, _ = cy.search('pinyin', ['an', 'du', '', ''])
+    rp, _ = cy.search(['', '', '', ''], ['an', 'du', '', ''], ['', '', '', ''])
     ck(all('an' in i['p'][0] and 'du' in i['p'][1] for i in rp), '两格组合 → %d 条' % len(rp))
 
     print('【成语 · 声调】')
-    rt, _ = cy.search('tone', ['4', '4', '2', '1'])
+    rt, _ = cy.search(['4', '4', '2', '1'], ['', '', '', ''], ['', '', '', ''])
     ck(any(i['w'] == '暗渡陈仓' for i in rt), '4421 命中「暗渡陈仓」→ %d 条' % len(rt))
-    rt2, _ = cy.search('tone', ['4', '4', '2', '1'], pool=rt)
+    rt2, _ = cy.search(['4', '4', '2', '1'], ['', '', '', ''], ['', '', '', ''], pool=rt)
     ck(len(rt2) == len(rt), '在同层结果里二次检索同样条件 → 结果不变(%d)' % len(rt2))
 
     print('【成语 · 单字】')
-    rc, _ = cy.search('char', ['', '', '陈', ''])
+    rc, _ = cy.search(['', '', '', ''], ['', '', '', ''], ['', '', '陈', ''])
     ck(all(i['c'][2] == '陈' for i in rc), '单字「陈」在第3格 → %d 条' % len(rc))
-    rc2, _ = cy.search('char', ['', '', '陈', ''], pool=rc)
+    rc2, _ = cy.search(['', '', '', ''], ['', '', '', ''], ['', '', '陈', ''], pool=rc)
     ck(len(rc2) == len(rc), '二次检索同条件 → 结果不变')
 
+    print('【成语 · 三组混合（同一位同时满足）】')
+    rm, _ = cy.search(['4', '', '', ''], ['an', '', '', ''], ['', '', '', ''])
+    ck(all(i['t'][0] == '4' and 'an' in i['p'][0] for i in rm),
+       '声调1位=4 且 拼音1位=an → %d 条（交集，不是并集）' % len(rm))
+    rmc, _ = cy.search(['', '', '', ''], ['', 'du', '', ''], ['', '', '陈', ''])
+    ck(all('du' in i['p'][1] and i['c'][2] == '陈' for i in rmc),
+       '拼音2位=du 且 单字3位=陈 → %d 条' % len(rmc))
+
     print('【成语 · 层级 + 空条件 + 非法字符】')
-    lv1, _ = cy.search('pinyin', ['zh', '', '', ''])
-    lv2, _ = cy.search('char', ['', '', '', '定'], pool=lv1)
+    E = ['', '', '', '']
+    lv1, _ = cy.search(E, ['zh', '', '', ''], E)
+    lv2, _ = cy.search(E, E, ['', '', '', '定'], pool=lv1)
     ck(all('zh' in i['p'][0] and i['c'][3] == '定' for i in lv2),
        '拼音 zh → 单字「定」二次检索 → %d 条（第1字含zh且第4字=定）' % len(lv2))
     try:
-        cy.search('pinyin', ['', '', '', ''])
+        cy.search(E, E, E)
         ck(False, '全空条件应抛异常')
     except ValueError:
         ck(True, '全空条件 → 提示"请至少填写一个条件"')

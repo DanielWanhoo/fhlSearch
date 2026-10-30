@@ -12,71 +12,124 @@ import com.wangchuan.fhlsearch.data.ShiciItem
  */
 
 // ==================================================================== 成语检索
-enum class CyMode { PINYIN, TONE, CHAR }
+
+/**
+ * 成语检索的三组输入（v3.2 起同屏常显，不再用页签切换）：
+ *  - [TONE] 声调：每格一个 1~4 的数字；
+ *  - [PINYIN] 拼音：完整拼音，也可只填声母 / 韵母，按连续子串模糊匹配；
+ *  - [CHAR] 单字：每格一个汉字。
+ *
+ * 三组的第 i 格都对应成语的第 i+1 个字 —— 同一位置填了多种时必须同时满足。
+ */
+enum class CyKind { TONE, PINYIN, CHAR }
 
 data class CyResult(
     val items: List<ChengyuItem>,
     /** 用户填了内容的位次（0..3），用于结果里的绿色标注 */
     val hitPositions: Set<Int>,
+    /** 每个位次被哪几组填了：结果里按字段分别标绿 */
+    val hitKinds: List<Set<CyKind>> = emptyList(),
 )
 
 object ChengyuLogic {
+
+    /** 一个成语 4 个字，因此三组各 4 格 */
+    const val SLOTS = 4
 
     private val PINYIN_RE = Regex("[A-Za-z]+")
     private val TONE_RE = Regex("[1-4]")
     private val CHAR_RE = Regex("[\\u4e00-\\u9fff]")
 
-    /** 校验四格输入，返回第一个非法格的序号（全部合法返回 -1）。 */
-    fun firstIllegal(mode: CyMode, cells: List<String>): Int {
+    /** 校验某一组的 4 格输入，返回第一个非法格的序号（全部合法返回 -1）。 */
+    fun firstIllegal(kind: CyKind, cells: List<String>): Int {
         cells.forEachIndexed { i, raw ->
             val c = raw.trim()
             if (c.isEmpty()) return@forEachIndexed
-            val ok = when (mode) {
-                CyMode.PINYIN -> PINYIN_RE.matches(c)
-                CyMode.TONE -> TONE_RE.matches(c)
-                CyMode.CHAR -> CHAR_RE.matches(c)
+            val ok = when (kind) {
+                CyKind.PINYIN -> PINYIN_RE.matches(c)
+                CyKind.TONE -> TONE_RE.matches(c)
+                CyKind.CHAR -> CHAR_RE.matches(c)
             }
             if (!ok) return i
         }
         return -1
     }
 
-    fun isEmpty(cells: List<String>): Boolean = cells.all { it.trim().isEmpty() }
+    /** 三组都留空 → 等于没填条件 */
+    fun isEmpty(tones: List<String>, pinyins: List<String>, chars: List<String>): Boolean =
+        (tones + pinyins + chars).all { it.trim().isEmpty() }
 
     /**
-     * 在 [pool]（为空表示全库）中检索。
-     * 拼音＝连续子串模糊匹配（大小写不敏感）；声调/单字＝精确相等；空格子＝该位不限。
-     * 结果≥2 条时按第 1 字拼音升序。
+     * 每个位次**被哪几组**填了内容（v3.2 起三组同时生效）。
+     *
+     * 标绿要分字段：只填了拼音的那一格，结果里只有那一列的拼音变绿，
+     * 汉字与声调仍是常规色 —— 这样一眼能看出这条结果的哪几笔跟输入对上了。
+     */
+    fun hitKinds(tones: List<String>, pinyins: List<String>, chars: List<String>): List<Set<CyKind>> {
+        val out = ArrayList<Set<CyKind>>(SLOTS)
+        for (i in 0 until SLOTS) {
+            val s = LinkedHashSet<CyKind>(3)
+            if (tones[i].trim().isNotEmpty()) s.add(CyKind.TONE)
+            if (pinyins[i].trim().isNotEmpty()) s.add(CyKind.PINYIN)
+            if (chars[i].trim().isNotEmpty()) s.add(CyKind.CHAR)
+            out.add(s)
+        }
+        return out
+    }
+
+    /** 填了内容的位次：三组里任一格非空，这个位次就被限定了 */
+    fun hitPositions(tones: List<String>, pinyins: List<String>, chars: List<String>): Set<Int> {
+        val out = LinkedHashSet<Int>()
+        hitKinds(tones, pinyins, chars).forEachIndexed { i, s -> if (s.isNotEmpty()) out.add(i) }
+        return out
+    }
+
+    /**
+     * 三组条件**同时**生效，在 [pool]（为空表示全库）中检索。
+     * 同一位置填了多种时需同时满足；留空的组 / 格表示不限。
+     * 结果 ≥2 条时按第 1 字拼音升序。
      */
     fun search(
-        mode: CyMode,
-        cells: List<String>,
+        tones: List<String>,
+        pinyins: List<String>,
+        chars: List<String>,
         all: List<ChengyuItem>,
         pool: List<ChengyuItem>? = null,
     ): CyResult {
-        require(cells.size == 4) { "成语检索需要 4 个输入格" }
-        if (isEmpty(cells)) throw IllegalArgumentException("请至少填写一个条件")
+        require(
+            tones.size == SLOTS && pinyins.size == SLOTS && chars.size == SLOTS
+        ) { "成语检索的声调 / 拼音 / 单字三组各需 4 格" }
+        if (isEmpty(tones, pinyins, chars)) throw IllegalArgumentException("请至少填写一个条件")
 
-        val hits = cells.indices.filter { cells[it].trim().isNotEmpty() }.toSet()
+        val kinds = hitKinds(tones, pinyins, chars)
+        val hits = kinds.indices.filter { kinds[it].isNotEmpty() }.toSet()
         val src = pool ?: all
         val out = ArrayList<ChengyuItem>()
         for (it in src) {
             var ok = true
-            for (i in 0 until 4) {
-                val c = cells[i].trim()
-                ok = when (mode) {
-                    CyMode.PINYIN -> c.isEmpty() || it.pinyin[i].contains(c, ignoreCase = true)
-                    CyMode.TONE -> c.isEmpty() || it.tone[i] == c
-                    CyMode.CHAR -> c.isEmpty() || it.chars[i] == c
+            for (i in 0 until SLOTS) {
+                val py = pinyins[i].trim()
+                if (py.isNotEmpty() && !it.pinyin[i].contains(py, ignoreCase = true)) {
+                    ok = false
+                    break
                 }
-                if (!ok) break
+                val tn = tones[i].trim()
+                if (tn.isNotEmpty() && it.tone[i] != tn) {
+                    ok = false
+                    break
+                }
+                val ch = chars[i].trim()
+                if (ch.isNotEmpty() && it.chars[i] != ch) {
+                    ok = false
+                    break
+                }
             }
             if (ok) out.add(it)
         }
         val sorted = if (out.size >= 2) {
             out.sortedWith(compareBy({ it.pinyin[0] }, { it.word }))
         } else out
-        return CyResult(sorted, hits)
+        return CyResult(sorted, hits, kinds)
     }
 }
 

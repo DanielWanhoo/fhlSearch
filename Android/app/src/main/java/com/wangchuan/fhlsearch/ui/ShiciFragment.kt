@@ -25,6 +25,7 @@ import com.wangchuan.fhlsearch.databinding.ViewFhlResultBinding
 import com.wangchuan.fhlsearch.logic.ScHit
 import com.wangchuan.fhlsearch.logic.ShiciLogic
 import com.wangchuan.fhlsearch.ocr.PoemOcr
+import com.wangchuan.fhlsearch.ui.sheet.CropSheetFragment
 import com.wangchuan.fhlsearch.ui.sheet.InfoSheetFragment
 import com.wangchuan.fhlsearch.ui.sheet.OcrBusyFragment
 import com.wangchuan.fhlsearch.util.ImageLoader
@@ -88,26 +89,29 @@ class ShiciFragment : Fragment(), ResultHost {
      */
     private var ocrCandidates: List<Set<Char>> = emptyList()
 
+    /** 这一轮图片的来源（`content://` 或文件路径），点预览图重新裁切时要用 */
+    private var ocrSource: String = ""
+
+    /** 裁好送去识别的那张图；结果区下方把它当预览显示 */
+    private var ocrImage: File? = null
+
     // ---------------------------------------------------------------- 系统相机 / 相册
 
-    /** 拍照：系统相机把照片写进 FileProvider 授权的缓存文件，回来后直接识别 */
+    /** 拍照：系统相机把照片写进 FileProvider 授权的缓存文件，回来后先裁切再识别 */
     private val takePicture = registerForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
         val uri = pendingCameraUri
         pendingCameraUri = null
         val ctx = context ?: return@registerForActivityResult
         if (ok && uri != null) {
-            startOcr { ImageLoader.load(ctx, uri) }
+            openCrop(uri.toString())
         } else {
             Toasts.show(ctx, getString(R.string.ocr_need_image))
         }
     }
 
-    /** 从相册挑图：系统照片选择器（不需要读存储权限） */
+    /** 从相册挑图：系统照片选择器（不需要读存储权限），选完同样先裁切 */
     private val pickImage = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        val ctx = context ?: return@registerForActivityResult
-        if (uri != null) {
-            startOcr { ImageLoader.load(ctx, uri) }
-        }
+        if (uri != null) openCrop(uri.toString())
     }
 
     /**
@@ -130,6 +134,9 @@ class ShiciFragment : Fragment(), ResultHost {
                     } else {
                         null
                     }
+                    // 自动化测试直接喂图，跳过裁切面板（测的是识别本身）
+                    ocrSource = path
+                    ocrImage = File(path)
                     startOcr { ImageLoader.loadFile(File(path)) }
                 }
             }
@@ -167,6 +174,25 @@ class ShiciFragment : Fragment(), ResultHost {
         b.cond.btnSearch.setOnClickListener { doSearch() }
         b.cond.btnOcrCamera.setOnClickListener { shootPhoto() }
         b.cond.btnOcrGallery.setOnClickListener { pickFromGallery() }
+
+        // 预览图点一下 = 重新裁切（换一个范围再识一遍，不用重新拍照）
+        b.cond.ivOcrPreview.setOnClickListener {
+            if (ocrSource.isNotEmpty()) CropSheetFragment.show(childFragmentManager, ocrSource)
+        }
+
+        // 裁切面板确认后回来：把裁好的图交给识别，并记下这张图给结果区做预览
+        childFragmentManager.setFragmentResultListener(
+            CropSheetFragment.REQUEST_KEY,
+            viewLifecycleOwner,
+        ) { _, bundle ->
+            val path = bundle.getString(CropSheetFragment.RESULT_PATH).orEmpty()
+            if (path.isEmpty()) return@setFragmentResultListener
+            val source = bundle.getString(CropSheetFragment.RESULT_SOURCE).orEmpty()
+            if (source.isNotEmpty()) ocrSource = source
+            val file = File(path)
+            ocrImage = file
+            startOcr { ImageLoader.loadFile(file) }
+        }
 
         updateCountText()
 
@@ -238,6 +264,12 @@ class ShiciFragment : Fragment(), ResultHost {
         }
     }
 
+    /** 拿到图先弹裁切面板：自动框出字格，用户确认范围后才识别 */
+    private fun openCrop(source: String) {
+        if (source.isEmpty()) return
+        CropSheetFragment.show(childFragmentManager, source)
+    }
+
     /**
      * 识别入口。[load] 负责在后台线程把图片读成位图（相册 Uri / 相机文件 / 测试文件）。
      *
@@ -290,6 +322,7 @@ class ShiciFragment : Fragment(), ResultHost {
         // 候选字要在填完之后再挂上：填格会触发 onCellChanged，那边会把它清掉
         ocrCandidates = res.candidates
         cameFromOcr = true
+        showOcrPreview()
         Toasts.show(
             ctx,
             getString(
@@ -308,6 +341,33 @@ class ShiciFragment : Fragment(), ResultHost {
         Toasts.show(ctx, getString(R.string.ocr_failed))
         // 结果区地方大，把原因写在那儿，比一闪而过的提示更好读
         result.showEmpty(text)
+    }
+
+    // ---------------------------------------------------------------- 识别用的图片预览
+
+    /**
+     * 把"这一轮真正送去识别的图"显示在字格下方。
+     *
+     * 用处有两个：结果不对时能马上看出是**裁歪了**还是**字认错了**；
+     * 点一下就带着原图重进裁切面板换个范围。缩略图按 900px 重读，省内存。
+     */
+    private fun showOcrPreview() {
+        val file = ocrImage ?: return
+        if (!isAdded) return
+        viewLifecycleOwner.lifecycleScope.launch {
+            val bmp = withContext(Dispatchers.IO) {
+                runCatching { ImageLoader.loadFile(file, 900) }.getOrNull()
+            } ?: return@launch
+            if (_b == null) return@launch
+            b.cond.ivOcrPreview.setImageBitmap(bmp)
+            b.cond.layOcrPreview.visibility = View.VISIBLE
+        }
+    }
+
+    private fun hideOcrPreview() {
+        val b = _b ?: return
+        b.cond.layOcrPreview.visibility = View.GONE
+        b.cond.ivOcrPreview.setImageDrawable(null)
     }
 
     // ---------------------------------------------------------------- 检索
@@ -385,6 +445,10 @@ class ShiciFragment : Fragment(), ResultHost {
         hits = emptyList()
         searched = false
         searchCount = 0
+        // 清空所有＝连"上一张识别用的图"一起收起来，回到初始状态
+        ocrImage = null
+        ocrSource = ""
+        hideOcrPreview()
         updateCountText()
         result.showInitial(getString(R.string.empty_shici))
     }

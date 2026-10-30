@@ -26,7 +26,7 @@ TAG = sys.argv[2] if len(sys.argv) > 2 else 'phone'
 PKG = 'com.wangchuan.fhlsearch'
 ACT = PKG + '/.MainActivity'
 OUT = os.path.join(_ROOT, '_analysis', 'ocr_gallery_%s.txt') % TAG
-SAMPLE = os.path.join(_ROOT, 'data', 'ocr', 'test', 'IMG_10271.jpg')
+SAMPLE = 'H:\\projects\\info\\需求\\ocr\\test\\IMG_10271.jpg'
 
 os.makedirs(os.path.join(_ROOT, '_analysis'), exist_ok=True)
 sys.path.insert(0, os.path.join(_ROOT, 'tools'))
@@ -143,6 +143,7 @@ if not d.find(r'/btnOcrGallery$', by='id'):
 # ---- 1. 相册识别 ----
 w('')
 w('--- 相册识别 ---')
+sh('logcat -c')
 if not d.tap('/btnOcrGallery$', label='相册识别'):
     launch_shici()
     d.tap('/btnOcrGallery$', label='相册识别')
@@ -176,6 +177,34 @@ if not picked:
         allok = False
 
 if picked:
+    # ---- v3.2：选完图先弹「裁切面板」，确认范围后才识别 ----
+    crop_ok = False
+    hint = ''
+    for _ in range(20):
+        time.sleep(1)
+        ns = d.nodes()
+        if d.find(r'/btnCropConfirm$', by='id', ns=ns):
+            crop_ok = True
+            h = d.find(r'/tvCropHint$', by='id', ns=ns)
+            hint = (h or {}).get('text', '') or ''
+            box = d.find(r'/cropView$', by='id', ns=ns)
+            w('  裁切面板已弹出：提示=「%s」 画布=%s' % (hint, (box or {}).get('bounds')))
+            break
+    if crop_ok:
+        w('  选完图先给预览与裁切 ✅')
+        d.shot('ocr_crop_%s' % TAG)
+        if '自动' in hint:
+            w('  自动框出 6×5 字格 ✅')
+        else:
+            w('  ⚠ 没自动框到字格（%s），改用居中默认框 —— 手工确认也能识别' % hint)
+        # 注意：裁切面板是 Dialog，hide_kb 会在点之前按 ESC，面板会被一起关掉
+        if not d.tap(r'/btnCropConfirm$', label='确认裁切', hide_kb=False):
+            w('  ❌ 点不到「确认裁切」')
+            allok = False
+    else:
+        w('  ❌ 选完图没有弹出裁切面板')
+        allok = False
+
     # 等识别跑完（"最终 N / 30 格"）
     grid_ok = False
     for _ in range(40):
@@ -185,9 +214,9 @@ if picked:
             break
     w('  回到 App：%s' % top_activity())
     if grid_ok:
-        w('  选图后自动识别并填格 ✅')
+        w('  确认裁切后自动识别并填格 ✅')
     else:
-        w('  ❌ 选图后没有进入识别流程（前台=%s）' % top_activity())
+        w('  ❌ 确认裁切后没有进入识别流程（前台=%s）' % top_activity())
         allok = False
 
     # 识别完应当直接给出检索结果（这张样例图能凑出「落日故人情」）
@@ -199,6 +228,27 @@ if picked:
     if not re.search(r'\(\d+\)', cnt):
         w('  ❌ 识别后没有自动出检索结果')
         allok = False
+
+    # v3.2：结果区下方要显示"识别用的那张图"
+    pv = d.find(r'/ivOcrPreview$', by='id', ns=ns)
+    if pv:
+        b = pv['bounds']
+        w('  字格下方显示识别用图 ✅ bounds=%s（%d×%d）' % (b, b[2] - b[0], b[3] - b[1]))
+    else:
+        w('  ❌ 结果下方没有显示识别用图')
+        allok = False
+
+    # 点预览图 → 重新进裁切面板（换范围再识一遍）
+    if pv and d.tap(r'/ivOcrPreview$', label='预览图（重新裁切）', hide_kb=False):
+        time.sleep(3)
+        again = d.find(r'/btnCropConfirm$', by='id')
+        if again:
+            w('  点预览图可重新裁切 ✅')
+            d.tap(r'/btnCropCancel$', label='取消裁切', hide_kb=False)
+            time.sleep(2)
+        else:
+            w('  ❌ 点预览图没有回到裁切面板')
+            allok = False
 d.shot('ocr_gallery_%s' % TAG)
 
 # ---- 2. 拍照识别 ----

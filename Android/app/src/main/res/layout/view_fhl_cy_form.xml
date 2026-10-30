@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 成语检索的输入区（手机与平板共用）：v3.2 起三组同屏常显，不再用页签切换
+     声调 / 拼音 / 单字，每组 4 格，对应成语的第 1~4 个字。
+     同一位置填了多种时需同时满足；整组留空表示不限。
+     4 个输入格由 ChengyuFragment 按 item_fhl_cy_input.xml 动态生成到三个容器里。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/layFormCard"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_fhl_card"
+    android:orientation="vertical"
+    android:padding="@dimen/fhl_gap_m">
+
+    <!-- 声调 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tvToneLabel"
+            style="@style/TextFhlBody"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/cy_mode_tone"
+            android:textSize="@dimen/fhl_fs_body_s"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvToneHint"
+            style="@style/TextFhlCaption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/fhl_gap_s"
+            android:text="@string/cy_hint_tone_group" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layTone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_s"
+        android:baselineAligned="false"
+        android:orientation="horizontal" />
+
+    <!-- 拼音 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_m"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tvPinyinLabel"
+            style="@style/TextFhlBody"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/cy_mode_pinyin"
+            android:textSize="@dimen/fhl_fs_body_s"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvPinyinHint"
+            style="@style/TextFhlCaption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/fhl_gap_s"
+            android:text="@string/cy_hint_pinyin_group" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layPinyin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_s"
+        android:baselineAligned="false"
+        android:orientation="horizontal" />
+
+    <!-- 单字 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_m"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tvCharLabel"
+            style="@style/TextFhlBody"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/cy_mode_char"
+            android:textSize="@dimen/fhl_fs_body_s"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvCharHint"
+            style="@style/TextFhlCaption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/fhl_gap_s"
+            android:text="@string/cy_hint_char_group" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layChar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_s"
+        android:baselineAligned="false"
+        android:orientation="horizontal" />
+
+    <TextView
+        android:id="@+id/tvFormHint"
+        style="@style/TextFhlCaption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_m"
+        android:gravity="center"
+        android:text="@string/cy_form_hint" />
+</LinearLayout>

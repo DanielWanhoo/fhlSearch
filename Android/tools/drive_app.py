@@ -150,23 +150,28 @@ def wheel_state(ns=None):
     return wh, best, [(t, y) for y, t in items]
 
 
-# 各选项型条件的候选项顺序（与 MingshiFragment 里一致），用来算该往哪个方向滚
-DYNASTY = ['汉', '明', '秦', '三国', '宋', '唐', '五代十国', '西楚', '晋', '先秦', '梦',
-           '南北朝', '清', '元', '辽']
-LOVE = ['博文', '乐舞', '品茗', '赏玩', '食珍', '书画', '雅宴', '演武', '弈棋', '妆饰']
-CLUB = ['百家书院', '千工苑', '金戈馆', '容华社', '棠梨坊', '饕餮居', '五湖商社', '逸趣社', '无']
-RANK = ['天', '地', '玄']
+# 各选项型条件的候选项（内容清单，**顺序与 v3.2 界面的显示顺序无关**）。
+# v3.2 起：朝代按历史时间序、其余按拼音 A~Z 显示，滚动方向不再靠这些数组算，
+# 见 wheel_pick()。这里保留清单只为"知道有哪些项"。
+DYNASTY = ['先秦', '秦', '西楚', '汉', '三国', '晋', '南北朝', '唐', '五代十国',
+           '宋', '辽', '元', '明', '清', '梦']
+LOVE = ['博文', '品茗', '赏玩', '食珍', '书画', '雅宴', '演武', '弈棋', '乐舞', '妆饰']
+CLUB = ['百家书院', '金戈馆', '千工苑', '容华社', '棠梨坊', '饕餮居', '无', '五湖商社', '逸趣社']
+RANK = ['地', '天', '玄']
 
 
-def wheel_pick(options, target, limit=14):
+def wheel_pick(options, target, limit=40):
     """在已弹出的滚轮面板里滚到目标项（面板由调用方先点开）。
 
-    策略：目标若已在可见项里就直接点它（滚轮支持点选，精确命中）；
-    否则按「两格一步」滑动逼近——实测 2 倍格高 + 500ms 的慢滑没有惯性误差，
-    而一步一格或快速滑动会因为惯性多走/少走，导致在两格之间来回振荡。
+    策略（v3.2 起改成与顺序无关）：
+      1) 目标已经露出来 → 直接点它（滚轮支持点选，精确命中）；
+      2) 否则**一格一格往下**试，每走一格都看一眼目标有没有露出来；
+         滚到底再回头往上走。这样不依赖"界面上第几项"，
+         选项顺序改了（朝代按时间序 / 其余按拼音序）也不会滚错方向。
     """
+    seen_bottom = False
     prev = None
-    same_count = 0
+    stuck = 0
     for _ in range(limit):
         ns = nodes()
         wh, cur, items = wheel_state(ns)
@@ -176,9 +181,9 @@ def wheel_pick(options, target, limit=14):
         if cur == target:
             print('   滚轮选中 %s' % target)
             return True
-        # 目标已经露出来了 → 直接点它
+        cx0 = (wh['bounds'][0] + wh['bounds'][2]) // 2
         hit = [n for n in ns if n['text'] == target and n['cls'] == 'android.widget.TextView'
-               and abs(n['center'][0] - (wh['bounds'][0] + wh['bounds'][2]) // 2) < 100]
+               and abs(n['center'][0] - cx0) < 100]
         if hit:
             sh('input tap %d %d' % hit[0]['center'])
             wait(1.3)
@@ -186,32 +191,29 @@ def wheel_pick(options, target, limit=14):
             if cur2 == target:
                 print('   滚轮点选 %s' % target)
                 return True
-            cur = cur2
-        try:
-            delta = options.index(target) - options.index(cur)
-        except ValueError:
-            print('   ⚠ 滚轮里没有 %s（当前 %s）' % (target, cur))
-            return False
+            continue
         x1, y1, x2, y2 = wh['bounds']
         cx = (x1 + x2) // 2
         cy = (y1 + y2) // 2
         gaps = [items[i + 1][1] - items[i][1] for i in range(len(items) - 1)]
         item_h = min(gaps) if gaps else max(1, (y2 - y1) // 5)
-        # 两格一步；只剩一格时用一格（慢速，尽量少误差）
-        steps = 2 if abs(delta) >= 2 else 1
-        dy = item_h * steps
-        dur = 500 if steps == 2 else 620
-        if delta > 0:
-            sh('input swipe %d %d %d %d %d' % (cx, cy + dy, cx, cy - dy, dur))
+        before = [t for t, _ in items]
+        if seen_bottom:      # 已经到底，回头往上走
+            sh('input swipe %d %d %d %d 480' % (cx, cy - item_h, cx, cy + item_h))
         else:
-            sh('input swipe %d %d %d %d %d' % (cx, cy - dy, cx, cy + dy, dur))
-        wait(1.3)
+            sh('input swipe %d %d %d %d 480' % (cx, cy + item_h, cx, cy - item_h))
+        wait(1.1)
+        after = [t for t, _ in wheel_state()[2]]
+        if after == before:
+            if seen_bottom:
+                break            # 上到底也没有 → 收工
+            seen_bottom = True
         if cur == prev:
-            same_count += 1
-            if same_count >= 3:          # 卡住了：换成一格的小步再试
-                same_count = 0
+            stuck += 1
+            if stuck >= 3:
+                stuck = 0
         else:
-            same_count = 0
+            stuck = 0
             prev = cur
     print('   ⚠ 滚轮没能滚到 %s' % target)
     return False

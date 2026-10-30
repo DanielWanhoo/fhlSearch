@@ -83,4 +83,35 @@
             android:layout_weight="1.6"
             android:text="@string/sc_search" />
     </LinearLayout>
+
+    <!-- 识别用的图片（v3.2）：真正送去识别的那张裁好的图，方便核对是不是裁歪了。
+         默认隐藏，识别过一次后才显示；清空所有时一并收起。 -->
+    <LinearLayout
+        android:id="@+id/layOcrPreview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/fhl_gap_s"
+        android:background="@drawable/bg_fhl_card"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="@dimen/fhl_gap_s"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/ivOcrPreview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:contentDescription="@string/ocr_preview_cd"
+            android:maxHeight="@dimen/fhl_ocr_preview_max_h"
+            android:scaleType="fitCenter" />
+
+        <TextView
+            style="@style/TextFhlCaption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/fhl_gap_xs"
+            android:gravity="center"
+            android:text="@string/ocr_preview_hint" />
+    </LinearLayout>
 </LinearLayout>

@@ -1,317 +1,165 @@
-# 忘川检索 fhlSearch · Android 版
+# 忘川检索 · fhlSearch（Android 版）
 
-《忘川风华录》「山石雅集」与「众里寻他」三类检索题的**离线查询 App**。
+> 面向 **Android 10（API 29）及以上**手机与平板 ｜ **完全离线**：不联网、不要任何权限
+> 题库已内嵌在安装包里，装好即用，不需要 Excel、不需要网络。
 
-**Kotlin + 传统 XML 布局，题库内嵌，完全离线：不联网、不要任何权限，支持 Android 10（API 29）及以上手机与平板。**
-
-> 非商业同人工具，仅供个人学习交流。与网易及《忘川风华录》官方无关联。
-
-界面与 Windows 版《忘川检索》共用同一套设计规范（宣纸底 + 朱砂 + 描金）。
-
-![成语检索](docs/screenshots/01-idiom.png)
+**当前版本：3.2（versionCode 5）**
 
 ---
 
-## 快速开始
+## 一、我要装它 → 拿这个文件
 
-直接下载 **[`dist/fhlSearch.apk`](dist/fhlSearch.apk)**（约 44 MB —— 其中约 30 MB 是内嵌的中文 OCR 模型），
-传到手机 / 平板上点一下安装即可。
+| 文件 | 路径 |
+| --- | --- |
+| **安装包** | `dist\忘川检索.apk`（约 44 MB —— 含约 30 MB 的中文 OCR 模型，识别全在本机跑） |
 
-> - 首次安装需要在系统里允许「安装未知应用」（Android 会自己弹提示）。
-> - 装完是一个**独立的离线 App**，没有广告、没有账号、不需要联网。
-> - 卸载就是普通的卸载，不会残留任何东西。
+传到手机/平板上点一下安装即可。图标是**朱砂圆印**，名字叫「忘川检索」。
+
+**v3.2（本轮）三处改进**：
+
+- **成语检索**：不再"先选模式再输入"，声调 / 拼音 / 单字**三组 12 格同屏**，想填哪组填哪组，
+  三组内容同时参与检索；结果按**列对齐**（上：声调小标签 → 中：拼音 → 下：成语），
+  命中的位次整列标绿；手机出结果后条件区**自动折叠成一行摘要**（可展开继续改），按键照留。
+- **诗词图片识别**：选完图先进**裁剪面板** —— 自动框出 6×5 字格，可拖动框体/四角自由调比例，
+  点「确认裁切」才识别；结果区格子下方显示**裁好的那张图**，点一下可重新裁。
+- **名士检索**：滚轮选项重排 —— 朝代按**历史时间顺序**（"梦"压最末），
+  爱好 / 社团 / 品阶按**拼音首字母 A~Z**。
+
+**v3.1**：图片识别大改 —— 复杂图片识别率明显提高，6 张样例图**全部 30/30 填满、全部直接给出
+诗句**（v3.0 是 5/6）。做法：等距点阵切格、逐格抗装饰取字、三趟识别投票、繁体归简，
+以及"认错一个字就按题库对一遍"的补救。
+
+**v3.0 新增**：
+
+- **诗词检索 · 图片识别** —— 点「拍照识别 / 相册识别」把题目截图丢进去，
+  自动找出 6×5 字格、认出 30 个汉字填进格子，并**直接开始检索**；
+- **每页大标题右边的 ⓘ 信息** —— 软件版本、题库条数、三大模块用法、版权与隐私说明。
+
+**用法看这个** → `docs\使用说明.md`
 
 ---
 
-## 三大模块
+## 二、我要改题库 / 重新出包 → 双击一个脚本
 
-| 模块 | 大标题 | 内容 |
+1. 改这三份 Excel（路径不要动）：
+
+   | 文件 | 位置 |
+   | --- | --- |
+   | 成语检索.xlsx | `data/\成语检索.xlsx` |
+   | 诗词检索.xlsx | `data/\诗词检索.xlsx` |
+   | 名士检索.xlsx | `data/\名士检索.xlsx` |
+
+2. 双击 **`android\一键重新打包apk.bat`**（会自动：读 Excel → 生成内嵌数据 → 编译 → 签名 → 复制到 `dist\`）
+3. 等 40 秒～2 分钟，新的 `dist\忘川检索.apk` 就好了。
+
+---
+
+## 三、目录里都有什么
+
+```
+
+├─ dist\忘川检索.apk          ← 交付的安装包（每次重新打包会覆盖）
+├─ 图标\                       ← 应用图标的 PNG 导出（1024/512/256/192、圆形、自适应图层、单色）
+├─ android\                    ← 全部源码工程
+│   ├─ 一键重新打包apk.bat      ← 改完题库双击这个
+│   ├─ keystore\ + keystore.properties  ← 签名密钥（勿外传；已在 .gitignore 中，不进版本库）
+│   └─ app\src\main\
+│       ├─ java\...\           ← Kotlin 源码
+│       │   ├─ logic\          ← 检索逻辑（纯函数，好测）
+│       │   ├─ ocr\            ← **v3.0：图片识别**（PoemOcr 取字流水线 + ML Kit 封装 + 繁简表）
+│       │   ├─ widget\         ← **v3.2：裁剪面板** CropView（拖动框体/四角，自由比例）
+│       │   ├─ ui\             ← 三个模块的界面 + ui\sheet\ 居中弹窗（含信息面板 / 识别等待）
+│       │   ├─ widget\         ← 6×5 字格、滚轮选择器等自绘控件
+│       │   └─ util\           ← 拼音标调、图片加载（降采样 + EXIF 摆正）
+│       ├─ res\                ← 布局、文案、配色（layout\ 手机版，layout-sw600dp\ 平板版）
+│       └─ assets\tiku_*.json  ← 内嵌题库（由 tools\build_tiku.py 从 Excel 生成）
+├─ docs\                       ← 文档
+│   ├─ 使用说明.md              ← 给你看的用法说明
+│   ├─ 需求梳理_Android.md       ← 需求与逐轮改动记录（含每轮验收结果）
+│   ├─ 界面文案与配色规范.md      ← 所有界面文字与色值的唯一出处
+│   ├─ Android构建环境验证.md     ← 工具链踩坑记录
+│   ├─ 现状核查与交接.md          ← 接手时的现状核查
+│   ├─ icons\                  ← 图标方案对比与预览
+│   └─ shots\                  ← 手机/平板/Android 10 的全流程截图
+└─ tools\                      ← 数据管道、验证与回归脚本
+    ├─ build_tiku.py           ← Excel → assets JSON
+    ├─ reference_logic.py      ← 检索语义的 Python 基准实现（--selftest 全通过）
+    ├─ drive_app.py            ← 自动走一遍全流程并抓图（可指定设备与 apk）
+    ├─ validate_res.py         ← 资源/XML/引用静态校验
+    ├─ gen_app_icon.py         ← 生成各密度图标
+    ├─ export_app_icon.py      ← 导出图标 PNG 到 图标\
+    └─ test_*.py / audit_*.py  ← 回归脚本（见下）
+```
+
+---
+
+## 四、我要改代码 → 怎么构建
+
+```powershell
+# 构建（本机 JDK 25 实测可用；工程内也带了一份 JDK 21 在 _spike\jdk21）
+$env:JAVA_HOME='C:\Program Files\Java\jdk-25'
+cd 项目根目录
+.\gradlew.bat :app:testDebugUnitTest --console=plain   # 单元测试（20 项）
+.\gradlew.bat :app:assembleDebug      --console=plain   # debug 包
+.\gradlew.bat :app:assembleRelease    --console=plain   # 正式包（自动签名）
+```
+
+装机与自动化验证：
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'
+# 走一遍全流程并抓图（模拟器上要先装好 app；脚本会自己装 debug 包）
+python tools\drive_app.py emulator-5554 phone
+# 想验证正式包：先设 $env:FHL_APK='dist\忘川检索.apk'
+```
+
+> ⚠️ 装机坑：设备上如果装的是 **release 签名**包，直接 `adb install -r` debug 包会报
+> `INSTALL_FAILED_UPDATE_INCOMPATIBLE`，必须先 `adb uninstall`。
+
+---
+
+## 五、回归脚本一览（tools\）
+
+| 脚本 | 干什么 | 用法 |
 | --- | --- | --- |
-| 成语检索 | 山石雅集第 14 题 | 319 条成语，拼音 / 声调 / 单字三种模式，各 4 个格子 |
-| 诗词检索 | 山石雅集第 15 题 | 282 条五言诗句，6×5 字格填字，自动找出能组成的诗句 |
-| 名士检索 | 众里寻他 | 115 位名士，9 种条件（朝代 / 爱好 / 社团 / 品阶 …）叠加筛选 |
+| `validate_res.py` | 资源/XML/引用静态校验（当前 600 处引用全通过） | `python tools\validate_res.py` |
+| `reference_logic.py --selftest` | 三大模块检索语义的基准自测 | `python tools\reference_logic.py --selftest` |
+| `drive_app.py` | 全流程自动走一遍 + 抓图 + 崩溃检查 | `python tools\drive_app.py <设备> phone\|tablet\|api29` |
+| `test_shici_focus.py` | 字格**选中框与输入焦点是否同步**（9 项） | `python tools\test_shici_focus.py <设备>` |
+| `test_ms_dialogs.py` | 名士三个窗口**是否屏幕居中** | `python tools\test_ms_dialogs.py <设备> [标签]` |
+| `test_ms_search_btn.py` | 名士**检索键显隐** 10 个状态 | `python tools\test_ms_search_btn.py <设备>` |
+| `test_cy_search_btn.py` | 成语**三组同屏 / 折叠展开 / 逐字对齐 / 内容保留**（9 项，手机含折叠、平板只查常显） | `python tools\test_cy_search_btn.py <设备>` |
+| `test_cy_second_search.py` | 成语**二次检索 / 清空当前 / 清空所有** 的层级与标注 | `python tools\test_cy_second_search.py <设备>` |
+| `test_ms_options_order.py` | 名士滚轮**选项顺序**（朝代时间序、其余拼音序，逐项比到末项） | `python tools\test_ms_options_order.py <设备>` |
+| `test_ocr.py` | **图片识别**：6 张样例图逐张识别 + 与 Windows 端对照 + 是否直接出诗句 | `python tools\test_ocr.py <设备> [标签]` |
+| `test_ocr_gallery.py` | 图片识别的**系统通道**：相册选择器 / 相机能否拉起并回到 App | `python tools\test_ocr_gallery.py <设备> [标签]` |
+| `test_info.py` | 三个模块的**信息面板**（弹出 / 居中 / 版本 / 正文 / 关闭） | `python tools\test_info.py <设备> [标签]` |
+| `test_font_scale.py` | **2 倍系统字号**压力测试 | `python tools\test_font_scale.py 2.0` |
+| `measure_layout.py` | 量关键控件的真实坐标（改布局时用） | `python tools\measure_layout.py <设备>` |
+| `audit_pinyin.py` | 审计拼音标调在**全题库**上的表现、题库完整性 | `python tools\audit_pinyin.py` |
+| `gen_app_icon.py` / `export_app_icon.py` | 生成/导出图标 | `python tools\export_app_icon.py` |
+| `gen_t2s.py` | 生成**繁→简小表** `ocr/T2S.kt`（改了题库才需要重跑） | `python tools\gen_t2s.py` |
+| `ocr_probe.py` | 图片识别**只算几何**：面板/切格/点阵/每格墨迹（不装机、秒出） | `python tools\ocr_probe.py <图片>` |
+| `ocr_one.py` | 图片识别**单张排查**：真机跑一张 + 打全过程日志 + 拉回拼板 | `python tools\ocr_one.py <设备> <图片> --dump` |
+| `montage_cell.py` | 看拼板里某一格**送进 ML Kit 的实际图形**（ASCII） | `python tools\montage_cell.py <拼板.png> 7,14` |
 
-> ⚠️ **关于「众里寻他」**：「众里寻他」活动近期没有复刻，本题库依据的是旧版本的规则与
-> 玩家整理的资料，**实际功能可能存在偏差或问题，当前仅供参考**。后续相关活动正式上线后，会据此再作调整。
-
-几个细节：
-
-- **成语**：拼音模糊匹配，声调、单字精确匹配；留空的格子表示"这一位不限"。命中的位次会在**成语 / 带调拼音 / 声调**三处同时标绿，一眼看出命中第几个字。
-- **诗词**：手指点某一格 → 出现朱砂红框与光标，输入法打进去的字就落在那格（接外接键盘时可用 **↑ ↓ ← →** 移动、Tab 右移、Backspace 清除）。命中后，用到的格子标绿并标上 **①②③④⑤**，表示这几个字分别取自哪一格；点结果里的任意一条可以切换高亮组合。
-- **名士**：朝代 / 爱好 / 社团 / 品阶 用**居中滚轮**挑，其余 5 种是**模糊输入**（忽略空格标点）。点结果里的任意一行弹出该名士详情（全部属性 + 题库里属于他的所有相关描述）。右上角有**检索次数**计数。
-
-| 诗词字格 | 名士检索 | 名士详情 |
-| --- | --- | --- |
-| ![诗词](docs/screenshots/03-poem.png) | ![名士](docs/screenshots/04-person.png) | ![详情](docs/screenshots/05-person-detail.png) |
-
----
-
-## 📷 图片识别（v3.0 新增，v3.1 大幅增强）：诗词检索不用一个个敲字
-
-字格下面多了两个键：**拍照识别** 和 **相册识别**。把带 6×5 字格的题目截图（或照片）丢进去，
-程序会自己找出字格、认出 30 个汉字填进格子，**然后直接开始检索** —— 就是搜题软件那种感觉。
-
-![图片识别](docs/screenshots/10-ocr.png)
-
-| 步骤 | 做什么 |
-| --- | --- |
-| 1 | 读图并按长边缩到 2200 以内，**按 EXIF 摆正**（手机照片常"躺着"存） |
-| 2 | 找"亮底大面板"，自动忽略长截图的黑边与状态栏；**面板与整图各试一次，谁能切出 5×6 用谁** |
-| 3 | 用暗像素投影（Otsu 阈值）切出 6 列 × 5 行，再把**带子中心拟合成等距点阵**（v3.1：带子宽窄不可信，位置才可信），按点阵均分窗口 |
-| 4 | **逐格**抠图（v3.1 重写）：只看**中间 56%** 判深浅、双重阈值滤掉淡光圈与圆角框、清掉贴边横贯的装饰线、细条形墨迹补边、框满整格时先扔"与窗口边连通"的装饰框再内缩重试 |
-| 5 | 30 格拼成一张白底大图（每格 240px、格间距 80px），交给 **ML Kit 中文识别** |
-| 6 | **紧 / 柔 / 宽三趟识别投票**（两趟一致就收工）：每格按票数定字，票数相同比 ML Kit 置信度；繁体结果自动归简（別→别、燒→烧…） |
-| 7 | 识别结果按包围盒映射回格子（一个字的宽度里被读成好几个字时只算一格，其余进候选） |
-| 8 | 填格 → 自动检索 → 出诗句；一条都没命中时**按题库对一遍**（4 个字对得上、且唯一一句时才补字），分不开就不猜 |
-
-- **完全离线**：模型 `com.google.mlkit:text-recognition-chinese` 已随 apk 打包，不联网、不下载、不依赖 Google Play 服务，**图片不出手机**。
-- **不申请权限**：拍照走系统相机（`TakePicture` + `FileProvider` 授权的缓存文件），选图走系统照片选择器（`PickVisualMedia`），因此**清单里一个权限都没有**。
-- **认错了可以直接改**：格子本来就是可编辑的，改掉认错的字再点「开始检索」；若没凑出诗句，会提示"识别结果可能有错，对照截图改一下"。
-- 实测 6 张样例图（含手机拍照、小红书长截图、504×393 的小图）：**6 张全部 30/30 填满、全部直接出诗句**（落日故人情 / 气蒸云梦泽 / 依楼似月悬 / 别有千金笑 / 浮云游子意 ×2），其中 2 张靠"按题库补 1 个字"救回。
-
-> 提高识别率：字格要完整（连边框一起）、尽量用原图别用转发压缩图、别拍得太斜；深色格子配浅色字也能认。
+> 图片识别出问题时的排查顺序见 [`docs/图片识别调试.md`](docs/图片识别调试.md)：
+> 先分清"格子切歪 / 取字失败 / 字认错"三类，再对症调参。
 
 ---
 
-## ⓘ 信息面板（v3.0 新增）
-
-每个页面**大标题右边**都有一个圆圈里带 i 的小图标，点开是屏幕正中的信息卡片：
-软件名 / **版本号（从安装包读）** / 题库条数 / 三大模块用法 / 图片识别怎么拍 / 题库来源与版权 / 隐私说明。
-
-| 信息面板（手机） | 信息面板（平板） |
-| --- | --- |
-| ![信息](docs/screenshots/11-info.png) | ![信息平板](docs/screenshots/12-info-tablet.png) |
-
----
-
-## 「检索」与「二次检索」
-
-这是本工具的核心交互，一层层把范围缩小：
-
-| 动作 | 行为 |
-| --- | --- |
-| **检索** | 在全库里查当前条件 |
-| **二次检索** | **在上一次的结果里接着筛**，点下去**当场出结果**（不用再点一次「检索」）；结果标题旁会显示"在上一次 N 条结果中筛出" |
-| **清空当前** | 退回上一次的结果（**你填的条件会保留**，方便接着改） |
-| **清空所有** | 全部复位，检索次数归零 |
-
-**检索键会在第一次查出结果后自动收起**（此后要接着筛就用「二次检索」，把屏幕让给结果）；
-点「清空所有」、或「清空当前」退到最后一层之下时，它会自动回来。
-一次都没命中（0 条）时它会保持显示，免得条件写错后没法直接重搜。
-
-| 二次检索（范围提示条） | 平板双栏 |
-| --- | --- |
-| ![二次检索](docs/screenshots/02-idiom-second.png) | ![平板](docs/screenshots/06-tablet.png) |
-
----
-
-## 目录结构
-
-```
-Android/
-├── app/                          Android 应用模块（源码都在这里）
-│   ├── build.gradle.kts
-│   ├── proguard-rules.pro
-│   └── src/
-│       ├── main/
-│       │   ├── AndroidManifest.xml    注意：一个权限都没申请
-│       │   ├── assets/                内嵌题库 JSON（由 data/ 里的 Excel 生成）
-│       │   ├── java/com/wangchuan/fhlsearch/
-│       │   │   ├── FhlApp.kt          入口：后台读题库
-│       │   │   ├── MainActivity.kt    外壳：手机底部三格 / 平板左侧三格导航 + 系统栏避让
-│       │   │   ├── data/Tiku.kt       题库解析
-│       │   │   ├── logic/SearchLogic.kt   三大模块的检索算法（纯函数，好测）
-│       │   │   ├── ocr/PoemOcr.kt     **图片识别流水线**：面板检测 → 投影切格 → 逐格归一化 → 拼板 → 映射回格子
-│       │   │   ├── ocr/OcrEngine.kt   ML Kit 中文识别的封装（把连读的整行字切成单字位置）
-│       │   │   ├── ui/                三个模块的界面：Chengyu / Shici / Mingshi + 共用 ResultView
-│       │   │   ├── ui/sheet/          居中弹窗：滚轮 / 输入 / 名士详情 / **信息面板** / 识别等待
-│       │   │   ├── widget/            自绘控件：6×5 字格、滚轮选择器
-│       │   │   └── util/              拼音标调、Toast、**图片加载（降采样 + EXIF 摆正）**
-│       │   └── res/                   布局 / 配色 / 文案 / 图标（含 layout-sw600dp 平板版式）
-│       └── test/java/...              单元测试（20 项）
-├── gradle/wrapper/               Gradle Wrapper（已内置，克隆下来直接能编译）
-├── gradlew / gradlew.bat / build.gradle.kts / settings.gradle.kts / gradle.properties
-├── 一键重新打包apk.bat           Windows 上双击即可出包
-├── dist/fhlSearch.apk            发布产物（已签名，可直接安装）
-├── data/                         题库源文件（三份 Excel）
-├── docs/
-│   ├── 需求梳理.md               需求、决策与逐轮改动记录（最完整的一份）
-│   ├── 使用说明.md               给使用者看的说明
-│   ├── 界面文案与配色规范.md      全部文案与配色取值
-│   ├── 图片识别调试.md            改 OCR 时怎么定位"切歪 / 取字失败 / 认错字"
-│   ├── 需求原文/                 最初的三份需求文本
-│   ├── icons/                    图标导出件与设计方案对比
-│   ├── screenshots/              README 用的截图
-│   └── dev/                      开发过程存档（构建环境验证报告、现状核查与交接说明）
-├── tools/                        开发与验证脚本（Python，见下）
-├── keystore.properties.example   签名配置示例（真名文件不进版本库）
-├── LICENSE / NOTICE.md / CHANGELOG.md
-```
-
----
-
-## 编译
-
-**环境要求**：JDK 17 及以上 + Android SDK（需要 `platforms;android-37`、`build-tools;36.0.0`）。
-Gradle Wrapper 已内置（9.8.1），不用另外装 Gradle。
-
-**用 Android Studio**：直接 `File → Open` 打开本目录，等它同步完，点绿三角运行。
-（`local.properties` 里 SDK 路径 Android Studio 会自己生成。）
-
-**用命令行**：
-
-```bat
-:: debug 包（产物 app\build\outputs\apk\debug\app-debug.apk）
-gradlew.bat :app:assembleDebug
-
-:: release 包
-gradlew.bat :app:assembleRelease
-
-:: 跑单元测试（20 项）
-gradlew.bat :app:testDebugUnitTest
-```
-
-**最省事**：Windows 上双击根目录的 **`一键重新打包apk.bat`** ——
-它会自己找 JDK、把 `data/` 里的题库转成内嵌数据、编译、再把 apk 收进 `dist/`。
-
-### 签名（可选）
-
-仓库里**不包含**签名密钥。没有密钥也能编译，只是产物叫 `app-release-unsigned.apk`，装不上手机。
-要出自己的签名包：
-
-```bat
-:: 1. 生成密钥库（只需做一次，两个口令自己定）
-keytool -genkeypair -v -keystore keystore\fhlsearch-release.jks ^
-        -alias fhlsearch -keyalg RSA -keysize 2048 -validity 10000
-
-:: 2. 把 keystore.properties.example 复制成 keystore.properties 并填好口令
-:: 3. 重新打包
-gradlew.bat :app:assembleRelease
-```
-
-`keystore.properties` 与 `*.jks` 都已在 `.gitignore` 里，不会被误提交。
-
----
-
-## 题库
-
-题库是三个 Excel，放在 `data/`：
-
-| 文件 | 内容 |
-| --- | --- |
-| `成语检索.xlsx` | 319 条成语（成语 + 4 个拼音 + 4 个声调） |
-| `诗词检索.xlsx` | 282 条五言诗句（诗句 + 诗名 + 作者） |
-| `名士检索.xlsx` | 115 位名士（朝代 / 品阶 / 职业 / 生逢 / 出身 / 技能 / 爱好 / 社团 / 描述） |
-
-改完题库后：
-
-```bat
-python tools\build_tiku.py          :: xlsx → app\src\main\assets\tiku_*.json
-gradlew.bat :app:assembleRelease    :: 重新编译
-```
-
-或者直接双击 `一键重新打包apk.bat`（已包含这一步）。
-`data/` 里没有 Excel、或者机器上没有 Python 时，脚本会自动跳过转换，
-直接沿用仓库里已经生成好的 JSON —— 所以**不装 Python 也能出包**。
-题库目录想放到别处，设环境变量 `FHL_TIKU_SRC` 指向那个目录即可。
-
-题库共 **135 KB**，全部内嵌进 apk，运行时零 IO、零联网。
-
-**题库来源**：题库来源于微博 **@蓝在寻**（原整理者），本仓库只做了格式转换，
-不对这部分内容主张任何权利；详见 [`NOTICE.md`](NOTICE.md)。
-
----
-
-## 技术要点
-
-| 项 | 取值 |
-| --- | --- |
-| 语言 / 界面 | Kotlin + 传统 XML 布局（ViewBinding），刻意不用 Compose |
-| 版本 | `minSdk 29`（Android 10）· `targetSdk 37` · **`versionName 3.1`** |
-| 构建 | AGP **9.4.1**（内置 Kotlin 支持，不能再单独 apply kotlin-android 插件）+ Gradle Wrapper 9.8.1 |
-| 包名 | `com.wangchuan.fhlsearch` |
-| 权限 | **无**。清单里连 `INTERNET` 都没有（拍照/选图都走系统托管的通道），物理上不可能联网 |
-| 图片识别 | **ML Kit 中文文字识别（内置模型版）** + 自研"面板检测 → 等距点阵切格 → 逐格抗装饰取字 → 三趟拼板投票 → 坐标映射 → 繁体归简 → 按题库补救"流水线 |
-| 安装包 | 44.25 MB（`arm64-v8a` + `armeabi-v7a` + `x86_64`；OCR 的 `.so` 每个 ABI 约 10 MB） |
-| 代码量 | 19 个 Kotlin 源文件（约 3100 行）+ 68 个 XML（约 1900 行） |
-| 适配 | 手机单栏 / 平板双栏（`layout-sw600dp`），横竖屏、刘海与手势条安全区都做了避让；系统字号放到 2 倍也不裁字 |
-
-几个实现上的取舍：
-
-- **检索算法是纯函数**（`logic/SearchLogic.kt`），不碰 Android API，所以能直接在 JVM 上跑单元测试。
-- **模糊匹配用的归一化字段在打包期就算好**（`build_tiku.py`），运行时不再处理，既省电又保证和 Windows 版行为一致。
-- **模糊、声调、单字三种模式的输入框共用同一批控件**，切换模式时各自记住自己填过的内容，不会互相覆盖。
-- **诗词字格的选中框与输入焦点强制同步**：点哪一格焦点就去哪一格，避免"看着选中了、打出来的字却进了上一格"。
-- 弹窗（滚轮 / 输入 / 名士详情）统一走 `CenteredDialogFragment`，宽度取屏幕 86% 且不超过 440dp，保证在手机与平板上都居中且不撑破。
-
----
-
-## 验证
-
-### 单元测试与静态检查
+## 六、当前状态
 
 | 项 | 结果 |
 | --- | --- |
-| `gradlew :app:testDebugUnitTest` | **20 项全绿**（检索算法 14 + 拼音标调 6） |
-| `python tools/validate_res.py` | **600 处资源引用全通过**（布局 / drawable / 字符串 / 样式） |
+| 单元测试 | **25 项全绿**（`SearchLogicTest` 19 + `PinyinToneTest` 6） |
+| 资源校验 | **749 处引用全通过** |
+| 实机验证 | **Android 10（API 29）** 手机 ／ **Android 15（API 37）** 手机 ／ 平板 —— 三个模块全流程 + 全部回归脚本均通过、无崩溃 |
+| 安装包 | `minSdk 29` / `targetSdk 37` / **版本 3.2** / 已签名 / 44.3 MB（arm64-v8a + armeabi-v7a + x86_64）；**一个权限都没申请**（拍照走系统相机 + FileProvider，选图走系统选择器），**不联网** |
+| 题库 | 成语 319 条 · 诗词 282 条 · 名士 115 位（合计 135.3 KB，已内嵌） |
+| 图片识别（v3.2） | 6 张样例图：**全部 30/30 填满、6 张都直接给出诗句**（落日故人情 / 气蒸云梦泽 / 依楼似月悬 / 别有千金笑 / 浮云游子意 ×2），其中 2 张靠"按题库补 1 个字"；与 Windows 端逐格一致率 66~100%。新增裁切面板后**识别结果不变**（自动框选框住的就是原来整图定位的那块） |
+| 信息面板（v3.2） | 三个模块的 ⓘ 都能弹出、屏幕居中、显示版本 3.2 与用法正文、可滚动、可关闭 |
+| 成语三组同屏（v3.2） | 手机 1080×2400 / 平板 1600×2560 / API29 1080×1920 三台设备全通过：三组 12 格常显、出结果折叠成摘要（平板双栏不折叠）、展开可继续改、框里内容全程保留、结果四列逐字对齐 |
+| 名士选项排序（v3.2） | 三台设备逐项核对：朝代 15 项「先秦 → … → 清 → 梦」、爱好 / 社团 / 品阶均按首字母 A~Z |
 
-### 设备回归
-
-在 Android 17 手机（1080×2400）、Android 17 平板（1600×2560）、Android 10 手机（API 29）三台模拟器上，
-用**正式签名包**跑过全流程与全部回归脚本：
-
-| 脚本 | 覆盖内容 | 结果 |
-| --- | --- | --- |
-| `drive_app.py` | 三个模块全流程 + 抓图 + 崩溃检查 | 通过，无崩溃 |
-| `test_cy_search_btn.py` | 成语「检索键」显隐 9 个状态 | 9/9 |
-| `test_ms_search_btn.py` | 名士「检索键」显隐 10 个状态 | 10/10 |
-| `test_cy_second_search.py` | 成语二次检索 9 项（含"输入框不被清空"） | 9/9 |
-| `test_shici_focus.py` | 字格选中框与输入焦点是否同步 9 项 | 9/9 |
-| `test_ms_dialogs.py` | 三个弹窗是否屏幕居中 | 通过 |
-| `test_font_scale.py` | 系统字号 2 倍压力测试 | 通过 |
-| `test_ocr.py` | **图片识别**：6 张样例图逐张识别、填充格数、是否直接出诗句 | 6/6 出诗句，填充全部 30/30 |
-| `test_ocr_gallery.py` | 图片识别的**系统通道**：照片选择器 → 识别 → 出结果；相机能否拉起 | 通过（Android 10 模拟器的文件选择器/相机应用本身不可用，该项跳过） |
-| `test_info.py` | 三个模块的**信息面板**：弹出、居中、版本号（3.1）、题库统计、用法正文、关闭 | 通过 |
-
-### tools/ 里都有些什么
-
-| 脚本 | 干什么 |
-| --- | --- |
-| `build_tiku.py` | 三份 Excel → 内嵌 JSON 题库 |
-| `reference_logic.py --selftest` | 三大模块检索语义的基准自测（不依赖 Android） |
-| `validate_res.py` | 资源 / XML / 引用静态校验 |
-| `audit_pinyin.py` | 全题库拼音标调审计（带调拼音有没有标错、标漏） |
-| `drive_app.py` | 在模拟器上走全流程、抓图、查崩溃 |
-| `test_*.py` | 上面那批回归脚本 |
-| `measure_layout.py` | 量关键控件的真实坐标（改布局时用） |
-| `gen_t2s.py` | 生成**繁→简小表** `ocr/T2S.kt`（用 Windows 的 LCMapString 扫 U+4E00..U+9FFF，只留题库里用得上的对子；改了题库才需要重跑） |
-| `ocr_probe.py` | 图片识别**只算几何**：面板检测 / 投影切格 / 等距点阵拟合 / 每格墨迹（不装机，电脑上秒出） |
-| `ocr_one.py` | 图片识别**单张排查**：在设备上真跑一张、打全过程日志，`--dump` 还能把三趟拼板 PNG 拉回来 |
-| `montage_cell.py` | 把拼板里某一格打成 ASCII，看**送进 ML Kit 的实际图形** |
-| `gen_app_icon.py` / `export_app_icon.py` / `check_adaptive_icon.py` | 生成与导出图标（朱砂圆印 + 自适应图标） |
-| `setup_gradle_wrapper.py` | 铺 Gradle Wrapper（本机没有 Android Studio 时的备用手段） |
-
-> 这些脚本全部按"脚本所在位置"推算项目根目录，克隆到任何路径都能直接跑；
-> 需要设备的脚本用 `adb`，默认设备号写在各脚本头部，可命令行覆盖。
-
----
-
-## 版权与免责
-
-- 这是一个**非商业同人工具**，仅供个人学习、研究与交流使用，**没有广告、赞助或任何收费入口**。
-- 《忘川风华录》及其全部游戏内容、名词、角色、设定、文本，版权归 **网易（NetEase）** 所有。
-- 程序代码按 MIT 协议开源；**题库数据不在 MIT 覆盖范围内**，见 [`NOTICE.md`](NOTICE.md)。
-- 题库由第三方整理，可能存在错漏，不保证与游戏内实际内容一致。
-- 程序**不含任何游戏美术 / 音频 / 立绘资源**，只有检索用的纯文本条目；图标是自行绘制的朱砂圆印。
-- **如果权利人认为本仓库或本程序有不妥之处，请在本仓库的 Issues 页面留言，或联系作者，
-  我会在收到通知后立即核实并移除，无需事先协商。**
-- 请支持正版游戏。
-
----
-
-## 许可
-
-代码以 MIT 协议开源，详见 [LICENSE](LICENSE)；
-**题库数据不在 MIT 授权范围内**，版权归其整理者，详见 [NOTICE.md](NOTICE.md)。
-
-版本变更见 [CHANGELOG.md](CHANGELOG.md)。
+> 逐轮改动与每轮的验收数据见 `docs\需求梳理_Android.md`（第一 ~ 二十五节）。
