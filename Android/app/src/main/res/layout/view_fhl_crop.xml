@@ -43,6 +43,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/fhl_gap_m"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
         android:orientation="horizontal">
 
         <com.google.android.material.button.MaterialButton
@@ -50,6 +52,7 @@
             style="@style/BtnFhlLight"
             android:layout_width="0dp"
             android:layout_height="@dimen/fhl_btn_h"
+            android:layout_gravity="center_vertical"
             android:layout_weight="0.9"
             android:text="@string/ocr_crop_cancel"
             android:maxLines="1"
@@ -63,6 +66,7 @@
             android:layout_width="0dp"
             android:layout_height="@dimen/fhl_btn_h"
             android:layout_marginStart="@dimen/fhl_gap_s"
+            android:layout_gravity="center_vertical"
             android:layout_weight="1.1"
             android:text="@string/ocr_crop_reset"
             android:maxLines="1"
@@ -76,6 +80,7 @@
             android:layout_width="0dp"
             android:layout_height="@dimen/fhl_btn_h"
             android:layout_marginStart="@dimen/fhl_gap_s"
+            android:layout_gravity="center_vertical"
             android:layout_weight="1.5"
             android:enabled="false"
             android:text="@string/ocr_crop_confirm"
