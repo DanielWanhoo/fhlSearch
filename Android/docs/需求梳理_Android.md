@@ -1139,8 +1139,8 @@ v3.0 在这 4 张上的成绩是 **30 / 26~27 / 29 / 29~30 格**，其中 IMG_10
 - 三台设备（API 37 手机 1080×2400 / 平板 1600×2560 / API 29 手机 1080×1920）全量回归：
   `drive_app` / `cy_search_btn` / `cy_second_search` / `shici_focus` / `ms_search_btn` /
   `ms_dialogs` / `ms_options_order` / `info` / `ocr` / `ocr_gallery` 全部通过、无崩溃；
-- 打包：`android\一键重新打包apk.bat` → `dist\忘川检索.apk`，**46,453,439 字节（≈44.3 MB，
-  与 v3.1 基本持平 —— 新功能没引入任何依赖）**，MD5 `E3A64800DD5F902EFD382024FC2A28E0`；
+- 打包：`android\一键重新打包apk.bat` → `dist\忘川检索.apk`，**46,453,467 字节（≈44.3 MB，
+  与 v3.1 基本持平 —— 新功能没引入任何依赖）**，MD5 `B200066B01B3CFB051B59C634778D73D`；
   脚本第 1 步会用 `tools/build_tiku.py` 重生成题库数据，本机 python 缺 `openpyxl` 时会直接
   报错退出（`pip install openpyxl` 后恢复正常，题库未改动时输出一致）。
 

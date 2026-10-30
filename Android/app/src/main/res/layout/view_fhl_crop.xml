@@ -50,8 +50,9 @@
             style="@style/BtnFhlLight"
             android:layout_width="0dp"
             android:layout_height="@dimen/fhl_btn_h"
-            android:layout_weight="1"
+            android:layout_weight="0.9"
             android:text="@string/ocr_crop_cancel"
+            android:maxLines="1"
             app:autoSizeTextType="uniform"
             app:autoSizeMinTextSize="8sp"
             app:autoSizeMaxTextSize="@dimen/fhl_fs_body_s" />
@@ -62,8 +63,9 @@
             android:layout_width="0dp"
             android:layout_height="@dimen/fhl_btn_h"
             android:layout_marginStart="@dimen/fhl_gap_s"
-            android:layout_weight="1"
+            android:layout_weight="1.1"
             android:text="@string/ocr_crop_reset"
+            android:maxLines="1"
             app:autoSizeTextType="uniform"
             app:autoSizeMinTextSize="8sp"
             app:autoSizeMaxTextSize="@dimen/fhl_fs_body_s" />
@@ -74,9 +76,10 @@
             android:layout_width="0dp"
             android:layout_height="@dimen/fhl_btn_h"
             android:layout_marginStart="@dimen/fhl_gap_s"
-            android:layout_weight="1.4"
+            android:layout_weight="1.5"
             android:enabled="false"
             android:text="@string/ocr_crop_confirm"
+            android:maxLines="1"
             app:autoSizeTextType="uniform"
             app:autoSizeMinTextSize="8sp"
             app:autoSizeMaxTextSize="@dimen/fhl_fs_body_s" />
