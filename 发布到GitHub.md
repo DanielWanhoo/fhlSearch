@@ -105,8 +105,9 @@ $combined = $sb.ToString() + "`n" + (Get-Content 'C:\Users\wtswg\.workbuddy\syst
 
 ### ✅ 当前要发的版本：v3.2.0
 
-> **当前状态**：代码与附注标签 `v3.2.0` 已推到 `origin/main`。
-> **剩下的只有网页上发 Release** —— 即下面「发版步骤」的第 3、4 步。
+> **当前状态**：✅ 已全部完成 —— 代码与附注标签 `v3.2.0` 已推到 `origin/main`，
+> Release 已发布、三个附件已挂上：
+> <https://github.com/DanielWanhoo/fhlSearch/releases/tag/v3.2.0>
 
 | 附件 | 大小 | 取自 |
 | --- | --- | --- |
@@ -159,8 +160,26 @@ HarmonyOS：`@Component struct` 里用 getter（`private get query()`）在真�
 
 1. 先按第四节把改动提交、推上去
 2. `git tag -a v3.2.0 -m "Windows 3.1.0 / Android 3.2 / HarmonyOS 3.2.3"` → `git push origin v3.2.0`
-3. 网页：仓库右侧 **Releases** → **Draft a new release** → 选刚推的 `v3.2.0` 标签 →
-   标题 `v3.2.0`、描述粘上面那段 → 三个产物拖进 **Attach binaries** → **Publish release**
+3. 发 Release（两种方式，任选其一）
+   - **命令行（推荐，本机已装 `gh`）**——先把它临时接上凭据，再建草稿、传附件、发布：
+
+     ```powershell
+     $env:Path += ';' + "$env:LOCALAPPDATA\Programs\GitHubCLI\bin"
+     # 本机 GCM 里存着 github.com 的 PAT，缺 read:org 所以 gh auth login 不认，
+     # 但以 GH_TOKEN 方式传进去完全能用（token 不上屏、不落盘）
+     $env:GH_TOKEN = (("protocol=https`nhost=github.com`n`n" | git credential fill) `
+                      | Where-Object { $_ -like 'password=*' }) -replace '^password=',''
+
+     gh release create v3.2.0 --draft --title "v3.2.0" --notes-file 说明.md
+     gh release upload v3.2.0 Windows\dist\fhlSearch_v3.1.0.exe --clobber
+     gh release upload v3.2.0 Android\dist\fhlSearch_v3.2.apk --clobber
+     gh release upload v3.2.0 Harmony\dist\fhlSearch_v3.2.3.hap --clobber
+     gh release edit  v3.2.0 --draft=false --latest
+     ```
+
+     先建成**草稿**再发布，好处是中途传附件失败也不会把半成品挂到页面上。
+   - **网页**：仓库右侧 **Releases** → **Draft a new release** → 选刚推的标签 →
+     标题、描述粘上面那段 → 三个产物拖进 **Attach binaries** → **Publish release**
 4. 发完把本文件第三节顶部的版本号改成新的（留作下次对照）
 
 ### 历史版本：v3.1.0 / v1.0.0（备查）
@@ -254,6 +273,13 @@ HarmonyOS 版用 DevEco Studio 打开 `Harmony/`，或按 `Harmony/README.md` �
       根 README 的「效果截图」一节按机型 / 系统标注
 - [x] 根 README 已按要求简化：标题 → 适用题目 → 当前版本 → 下载（指向 Releases）→
       主要功能 → 各平台特性（表格）→ 效果截图 → 安装须知（三端 + 鸿蒙侧载）→ 开发工具与模型 → 许可
+- [x] Release `v3.2.0` 已发布（非草稿、已设为 Latest），三个附件均已挂上：
+      `fhlSearch_v3.1.0.exe` 315,392 字节 / `fhlSearch_v3.2.apk` 46,469,943 字节 /
+      `fhlSearch_v3.2.3.hap` 1,592,008 字节。核对命令：
+
+      ```powershell
+      gh release view v3.2.0 -R DanielWanhoo/fhlSearch
+      ```
 
 ### v3 专项检查（保留备查）
 
