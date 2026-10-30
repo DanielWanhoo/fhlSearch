@@ -16,3 +16,6 @@ bank_src.txt
 # Windows 系统文件
 Thumbs.db
 desktop.ini
+
+# dist/ 里按版本号归档；不带版本号的是本机构建输出，不入库
+dist/fhlSearch.exe

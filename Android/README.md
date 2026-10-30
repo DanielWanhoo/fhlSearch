@@ -11,7 +11,7 @@
 
 | 文件 | 路径 |
 | --- | --- |
-| **安装包** | `dist\忘川检索.apk`（约 44 MB —— 含约 30 MB 的中文 OCR 模型，识别全在本机跑） |
+| **安装包** | `dist\fhlSearch_v3.2.apk`（约 44 MB —— 含约 30 MB 的中文 OCR 模型，识别全在本机跑） |
 
 传到手机/平板上点一下安装即可。图标是**朱砂圆印**，名字叫「忘川检索」。
 
@@ -51,7 +51,7 @@
    | 名士检索.xlsx | `data/\名士检索.xlsx` |
 
 2. 双击 **`android\一键重新打包apk.bat`**（会自动：读 Excel → 生成内嵌数据 → 编译 → 签名 → 复制到 `dist\`）
-3. 等 40 秒～2 分钟，新的 `dist\忘川检索.apk` 就好了。
+3. 等 40 秒～2 分钟，新的 `dist\fhlSearch.apk` 就好了（按版本号归档时另存为 `dist\fhlSearch_v3.x.apk`）。
 
 ---
 
@@ -59,7 +59,8 @@
 
 ```
 
-├─ dist\忘川检索.apk          ← 交付的安装包（每次重新打包会覆盖）
+├─ dist\fhlSearch_v3.2.apk    ← 交付的安装包（按版本号归档）
+├─ dist\fhlSearch.apk          ← 最近一次打包的输出（不入库，见 .gitignore）
 ├─ 图标\                       ← 应用图标的 PNG 导出（1024/512/256/192、圆形、自适应图层、单色）
 ├─ android\                    ← 全部源码工程
 │   ├─ 一键重新打包apk.bat      ← 改完题库双击这个
@@ -111,7 +112,7 @@ cd 项目根目录
 $env:PYTHONIOENCODING='utf-8'
 # 走一遍全流程并抓图（模拟器上要先装好 app；脚本会自己装 debug 包）
 python tools\drive_app.py emulator-5554 phone
-# 想验证正式包：先设 $env:FHL_APK=<仓库根>\dist\忘川检索.apk
+# 想验证正式包：先设 $env:FHL_APK=<仓库根>\dist\fhlSearch_v3.2.apk
 ```
 
 > ⚠️ 装机坑：设备上如果装的是 **release 签名**包，直接 `adb install -r` debug 包会报

@@ -29,9 +29,9 @@
 
 ### 方式一：下载现成的（未签名 hap）
 
-**[`dist/fhlSearch.hap`](dist/fhlSearch.hap)** —— 约 1.6 MB，**未签名**，适用于 HarmonyOS NEXT（API 24 / 6.1.1）手机与平板。
+**[`dist/fhlSearch_v3.2.3.hap`](dist/fhlSearch_v3.2.3.hap)** —— 约 1.5 MB，**未签名**，适用于 HarmonyOS NEXT（API 24 / 6.1.1）手机与平板。
 
-> `dist/` 里同时留了各版本的副本（`fhlSearch_v3.2.3.hap`、`fhlSearch_v3.0.0.hap`）方便回退；不带版本号的 `fhlSearch.hap` 永远是最新版。
+> `dist/` 里按版本号留档（`fhlSearch_v3.2.3.hap`、`fhlSearch_v3.0.0.hap`）方便回退；最新版的正式下载见页面右侧 **Releases**。
 
 华为的安装包**必须签名**才能进入设备，未签名的 hap 直接点开是**装不上的**，需要侧载：
 
@@ -157,7 +157,7 @@ Harmony/
 │       │   ├── model/            数据模型
 │       │   └── data/             内嵌题库（由 scripts/ 从 data/ 的 Excel 生成）
 │       └── resources/           base / dark 两套配色（22 组，深浅色成对）+ 图标 + 说明用样图
-├── dist/fhlSearch.hap            未签名安装包（需侧载，见「快速开始」）
+├── dist/fhlSearch_v3.2.3.hap    未签名安装包（需侧载，见「快速开始」）
 ├── data/                         题库源文件（三份 Excel）
 ├── docs/                         标准文档（需求 / 技术 / 设计 / 执行计划 / 格式说明 / 整合说明）
 │   ├── screenshots/              README 用的截图

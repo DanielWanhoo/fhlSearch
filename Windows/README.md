@@ -18,7 +18,7 @@
 
 ## 快速开始
 
-直接下载 [`dist/fhlSearch.exe`](dist/fhlSearch.exe) 双击运行即可，不需要安装任何东西。
+直接下载 [`dist/fhlSearch_v3.1.0.exe`](dist/fhlSearch_v3.1.0.exe) 双击运行即可，不需要安装任何东西。
 
 > Win7 需要系统已装 .NET Framework 4.0+；Win10 / Win11 系统自带，开箱即用。
 
@@ -112,7 +112,8 @@
 
 ```
 ├── dist/                        发布产物
-│   ├── fhlSearch.exe             ← 单文件绿色程序
+│   ├── fhlSearch_v3.1.0.exe     ← 单文件绿色程序（按版本号归档）
+│   ├── fhlSearch.exe            ← 最近一次 make_dist.py 的输出（不入库，见 .gitignore）
 │   └── 使用说明.txt             由 docs/使用说明.md 自动生成
 ├── data/                        题库源文件（三个 Excel）
 ├── 重新生成题库.bat             改完题库后双击这个

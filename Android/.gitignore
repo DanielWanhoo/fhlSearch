@@ -39,3 +39,6 @@ __pycache__/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# dist/ 里按版本号归档；不带版本号的是本机打包输出，不入库
+dist/fhlSearch.apk
