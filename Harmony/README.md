@@ -6,7 +6,7 @@
 
 > 非商业同人工具，仅供个人学习交流。与网易及《忘川风华录》官方无关联。
 
-界面与 Windows / Android 版共用同一套设计规范（宣纸底 + 朱砂 + 描金），底部导航用的是 HarmonyOS 官方 HDS 的**「沉浸光感」悬浮页签栏**。
+界面与 Windows / Android 版共用同一套设计规范（宣纸底 + 朱砂 + 描金），底部导航用的是 HarmonyOS 官方 HDS 的**「沉浸光感」悬浮页签栏**；v3.3 起整页垫了**环境光衬**（暖红 / 金 / 青墨三团柔光），玻璃才有可折射的光，页签栏的厚薄还能在「信息」里调。
 
 | 成语检索 | 诗词检索 |
 | --- | --- |
@@ -18,6 +18,8 @@
 
 > v3.0 起：诗词检索可以**拍照 / 选图自动填表**；大标题右边的「ⓘ」是应用说明与用法（含样图）。
 > v3.2 起：识图会先出**裁剪框**让你确认字格范围；成语结果按「一字一列」靠左排列，手机上出结果后输入区自动收成一行条件摘要。
+> v3.3 起：按官方《沉浸光感开发案例》重做了视觉——页面环境光衬、输入格竖向渐变与聚焦发光、按钮顶部反光、卡片圆角统一放大；「信息」里新增**光感强度**三档（精致 / 均衡 / 柔和），可即时调整页签栏材质厚薄并自动记住。
+> 同一版给切页补了**过渡**：背景保持静止，内容淡入并由弹簧带一点回弹落位（系统「减弱动画」开启时自动跳过）。
 
 | 手机上出结果后（输入区自动折叠） |
 | --- |
@@ -29,9 +31,9 @@
 
 ### 方式一：下载现成的（未签名 hap）
 
-**[`dist/fhlSearch_v3.2.3.hap`](dist/fhlSearch_v3.2.3.hap)** —— 约 1.5 MB，**未签名**，适用于 HarmonyOS NEXT（API 24 / 6.1.1）手机与平板。
+**[`dist/fhlSearch_v3.3.0.hap`](dist/fhlSearch_v3.3.0.hap)** —— 约 1.9 MB，**未签名**，适用于 HarmonyOS NEXT（API 24 / 6.1.1）手机与平板。
 
-> `dist/` 里按版本号留档（`fhlSearch_v3.2.3.hap`、`fhlSearch_v3.0.0.hap`）方便回退；最新版的正式下载见页面右侧 **Releases**。
+> `dist/` 里按版本号留档（`fhlSearch_v3.3.0.hap`、`fhlSearch_v3.2.3.hap`、`fhlSearch_v3.0.0.hap`）方便回退；最新版的正式下载见页面右侧 **Releases**。
 
 华为的安装包**必须签名**才能进入设备，未签名的 hap 直接点开是**装不上的**，需要侧载：
 
@@ -156,8 +158,8 @@ Harmony/
 │       │   │                     OcrGridExtractor：字格还原纯算法）
 │       │   ├── model/            数据模型
 │       │   └── data/             内嵌题库（由 scripts/ 从 data/ 的 Excel 生成）
-│       └── resources/           base / dark 两套配色（22 组，深浅色成对）+ 图标 + 说明用样图
-├── dist/fhlSearch_v3.2.3.hap    未签名安装包（需侧载，见「快速开始」）
+│       └── resources/           base / dark 两套配色（33 组，深浅色成对）+ 图标 + 说明用样图
+├── dist/fhlSearch_v3.3.0.hap    未签名安装包（需侧载，见「快速开始」）
 ├── data/                         题库源文件（三份 Excel）
 ├── docs/                         标准文档（需求 / 技术 / 设计 / 执行计划 / 格式说明 / 整合说明）
 │   ├── screenshots/              README 用的截图
@@ -175,7 +177,7 @@ Harmony/
 | 项 | 取值 |
 | --- | --- |
 | 语言 / 界面 | ArkTS + ArkUI 声明式（Stage 模型），不用任何第三方库 |
-| 版本 | `compileSdkVersion 26` · `targetSdkVersion / compatibleSdkVersion 6.1.1(24)` · `versionName 3.2.3` |
+| 版本 | `compileSdkVersion 26` · `targetSdkVersion / compatibleSdkVersion 6.1.1(24)` · `versionName 3.3` |
 | 构建 | DevEco Studio 26.0.0.621 + hvigor（`modelVersion 6.1.1`），命令行 `hvigorw assembleHap` |
 | 包名 | `com.example.culturalsearch`（改名后需重新签名安装） |
 | 权限 | 只有一个 `ohos.permission.VIBRATE`（震动反馈用）——普通级、安装即授权，不弹窗、不联网 |
@@ -191,7 +193,9 @@ Harmony/
 - **避让留白一律放在可滚动内容内部**：加在容器上会在页签栏附近留出一条空白带、把内容切断。
 - **玻璃材质分两套色**：页面上的玻璃（`glass_bg`，浅色主题是白 65%）与**卡片上的**玻璃（`glass_card_bg`，浅色主题取暖墨半透明）—— 白玻璃叠在近白的卡片上会完全隐形。
 - **震动反馈**用系统预置触感 `haptic.effect.soft`，设备能力（有无振动器 / 支不支持预置触感）只在首次按压时探测一次并缓存；没有马达的设备静默跳过，不做无效调用。
-- **深浅色成对配色**：`base` / `dark` 两套 22 组颜色同名同序，全部走 `$r('app.color.xxx')` 资源，不硬编码色值。
+- **深浅色成对配色**：`base` / `dark` 两套 33 组颜色同名同序，全部走 `$r('app.color.xxx')` 资源，不硬编码色值。
+- **「光感」是三层叠出来的**（v3.3）：页面底层的环境光衬（静态径向渐变光斑）+ 组件自身的玻璃渐变与描边 + 系统材质折射。设备是 API 24，官方 `uiMaterial`（API 26）用不上，所以靠 HDS 的材质等级（精致 / 均衡 / 柔和）与光衬复刻观感。
+- **切页时背景静止、内容落位回弹**（v3.3）：环境光衬从「每页各带一份」提到外壳 `Index.ets` 的 `Stack` 最底层（`HdsTabs` 之外），切页时底衬一动不动（实测页签栏上方纯背景带切页前后 MAD 0.006~0.09）；内容只叠一层纵向弹簧 —— `opacity 0.62→1` 与 `translate.y 16vp→0` 由同一条 `curves.interpolatingSpring(0, 1, 260, 14)` 驱动，越过原位约 3vp 再收住就是那点回弹。系统横向平移仍是 220ms。更早的做法只叠不透明度淡入；判断「哪一页是进场页」必须用 `onContentWillChange` 的 `comingIndex`（`onChange` 动画结束后才回调，会把旧页压暗）。系统开启「减弱动画」时整段跳过。
 
 ---
 
@@ -228,7 +232,7 @@ python scripts\excel_to_mingzi.py    :: data\名士检索.xlsx → entry\...\dat
 | [docs/01-requirements.md](docs/01-requirements.md) | 需求规格：三大模块、检索规则、结果分支 |
 | [docs/02-tech-spec.md](docs/02-tech-spec.md) | 技术规格：架构、数据模型、算法 |
 | [docs/03-design-spec.md](docs/03-design-spec.md) | UI 设计规范：配色、字体、间距、动效、页签栏、响应式 |
-| [docs/04-execution-plan.md](docs/04-execution-plan.md) | 分阶段执行计划（36 个阶段，每阶段都有验收标准与完成记录） |
+| [docs/04-execution-plan.md](docs/04-execution-plan.md) | 分阶段执行计划（40 个阶段，每阶段都有验收标准与完成记录） |
 | [docs/05-excel-format.md](docs/05-excel-format.md) | 题库 Excel 格式说明 |
 | [docs/06-poetry-integration.md](docs/06-poetry-integration.md) | 诗词模块数据来源说明 |
 | [CHANGELOG.md](CHANGELOG.md) | 更新记录 |
@@ -255,6 +259,8 @@ python scripts\excel_to_mingzi.py    :: data\名士检索.xlsx → entry\...\dat
 | 结果卡排版（v3.2.2） | 手机 / 平板：「声调 / 拼音 / 汉字」逐字竖排对齐、整排靠左紧凑，命中列标绿正确 |
 | 裁剪框（v3.2） | 平板：自动框住干净 6×5 字格 → **30 / 30** 全对；拖右下角圆点缩放时宽高各自独立、左上角不动；用非 6:5 的框识别仍 30 / 30 |
 | 窄屏折叠（v3.2.3） | 手机：检索后收成一行条件摘要、按键保留、结果首屏可见；点摘要行展开 / 收起双向正常；折叠态点「二次检索」先展开输入区 |
+| 沉浸光感（v3.3） | 手机 / 平板深浅色各验一轮：「信息」里三档光感切换即时生效、重开 App 保持上次选择；环境光衬在深浅色下都不发脏（深色 #29/#14、浅色 #33/#29） |
+| 切页动画（v3.3） | 手机 / 平板：点页签与左右滑动两条路径都有进场淡入与落位回弹；背景静止（页签栏上方纯背景带切页前后 MAD 0.006~0.09）、内容由 `interpolatingSpring` 带 3vp 过冲落位；系统「减弱动画」开启时自动跳过 |
 | 流畅性（v3） | 切页 / 滚动期间合成器稳定 **120Hz**（`displaySync` 帧间隔 + `hidumper -s RenderService -a fpsCount`）；点页签切换超时帧 2 / 1348；滑动切页抓帧确认无斜切变形 |
 
 ---

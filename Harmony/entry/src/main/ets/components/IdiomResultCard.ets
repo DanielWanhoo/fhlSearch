@@ -80,15 +80,16 @@ export struct IdiomResultCard {
     .justifyContent(FlexAlign.Start)
     .alignItems(VerticalAlign.Top)
     .width('100%')
-    .padding({ left: 12, top: 8, right: 12, bottom: 8 })
-    .borderRadius(12)
+    .padding({ left: 14, top: 12, right: 14, bottom: 12 })
+    .borderRadius(18)
     .backgroundColor($r('app.color.card_bg'))
+    // 左侧主色竖线（3vp）：结果卡与「当前检索方向」的视觉连接，保留
     .border({ width: { left: 3 }, color: $r('app.color.primary') })
     .shadow({
-      radius: 8,
+      radius: 14,
       color: $r('app.color.card_shadow'),
       offsetX: 0,
-      offsetY: 2
+      offsetY: 4
     })
     .accessibilityGroup(true)
     .accessibilityText(`${this.item.word}，拼音 ${this.item.pinyin.join(' ')}，声调 ${this.item.tones.join(' ')}`)

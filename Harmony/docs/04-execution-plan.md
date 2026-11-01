@@ -565,6 +565,543 @@
 | 37.7 | 截图：`01-idiom.png` 换成 v3.2.3 新截屏，新增 `09-idiom-collapsed.png`（折叠态） | ✅ |
 | 37.8 | 本地提交 `d4ff23b`（23 files changed, +1319 / -333）；是否 `git push` 待用户确认 | ⏳ |
 
+## 阶段 38：v3.3「沉浸光感」视觉升级（2026-10-30）✅ 完成
+
+**背景**：用户要求「按照 `H:\\projects\\info\\Spatialization-master-example` 里的内容对 app 进行美化」——即华为官方《沉浸光感开发案例》的设计语言。
+
+**关键取舍**：官方案例核心的 `uiMaterial.ImmersiveMaterial` 标注 `@since 26.0.0`，`deviceInfo.apiAvailable('26.0.0')` 在两台真机（HarmonyOS 6.1.1(24)）上为 false ⇒ 沉浸材质在目标设备上**看不到效果**。因此本阶段全部使用 **API 24 可见** 的手段落地（`hdsMaterial` 材质等级、环境光衬、玻璃渐变与描边、排版呼吸、投影），`uiMaterial` 只作为将来升级 API 26 的预留，不启用。
+
+| # | 任务 | 状态 |
+|---|------|------|
+| 38.1 | 配色扩到 33 组（base/dark 成对同序）：新增 `glow_primary/glow_gold/glow_ink` 三组光斑及 `*_clear` 收尾色、`cell_top/cell_bottom` 输入格渐变、`surface_sheen/surface_sheen_clear` 按钮反光、`focus_glow` 聚焦发光 | ✅ |
+| 38.2 | 新组件 `common/AmbientBackdrop.ets`：底色 + 三个径向渐变光斑（左上暖红 82%、右上金 64%、下部青墨 110%）；先铺在三页根节点 `Stack` 第一层，阶段 39 起改铺到外壳 `pages/Index.ets` 最底层 | ✅ |
+| 38.3 | `common/MaterialUtil.ets` 增加「光感强度」三档（EXQUISITE/GENTLE/SMOOTH ↔ 精致/均衡/柔和），`getBarMaterial()` 的 `materialLevel` 由档位决定；`EntryAbility` 用 `PersistentStorage` 落盘 | ✅ |
+| 38.4 | `pages/Index.ets`：`@StorageProp('materialLevel')` 监听并把它拼进 `floatingStyle()` 的缓存键，档位一变立刻重建材质参数 | ✅ |
+| 38.5 | 组件升级：`GlassButton` 48/24 + 顶部反光；`IdiomInputCell` 56/14 + 竖向渐变 + 聚焦发光；`GridCell` 圆角 14 + 外层渐变；三种结果卡圆角 18 + 统一投影 | ✅ |
+| 38.6 | 排版与信息层级：标题 26/700，副标题贴近；「检索 N 次」改玻璃胶囊 | ✅ |
+| 38.7 | `AppInfoDialog`：标题下加「光感强度」三档胶囊（点击即时生效 + 轻震动），正文新增「外观与光感」小节 | ✅ |
+| 38.8 | 深浅色各调两轮 alpha（深色 #40/#33 → #29/#14、浅色 #40/#33 → #33/#29），解决「脏棕」与「偏粉」 | ✅ |
+| 38.9 | 真机验收：手机（Pura 70，1256×2760）+ 平板（MatePad Pro，2800×1840），深浅色各一版截图；弹窗档位切换、成语检索（声4 + 拼 du → 暗渡陈仓）结果卡均已截图确认 | ✅ |
+| 38.10 | 删除验收用的临时强制浅色代码；版本号在阶段 39 结束时统一定为 **v3.3** | ✅ |
+
+**踩坑记录**
+
+1. **渐变收尾不能用透明色**：`Color.Transparent` 是「透明黑」，米色底上会在光斑边缘留一圈灰雾。必须用同 RGB、alpha=`00` 的 `*_clear` token（如 `glow_primary_clear = #00B43A2E`），渐变才是「同色变淡」。
+2. **深色光斑浓度要减半**：红 + 金叠在纯黑上会合成一片「脏棕」，观感像蒙了灰；降到 `#29`/`#14` 才回到「干净的暗色 + 一点暖光」。
+3. **命中格不能让渐变透出来**：`GridCell` 的渐变如果挂在 TextInput 上，命中绿底会与渐变叠加发脏；改成外层 `Column` 承担渐变、TextInput 命中时底色透明。
+4. **缓存键漏了档位**：`floatingStyle()` 的结果按 key 缓存，最初没把档位拼进 key，切换档位页签栏纹丝不动——补上后即时生效。
+5. **uitest 坐标要按 dumpLayout 的实际 bounds 点**：肉眼看弹窗胶囊在 y≈536，实际 bounds 是 `[377,577][458,624]`，中心 600；按估计值点会落在两行之间的空隙，表现为「点了没反应」。
+
+
+## 阶段 39：v3.3 检索页切换动效（2026-10-30）✅ 完成
+
+**背景**：用户要求「给不同检索页面的切换做个动画」，随后追加三点：切页时**背景别动**、图标与文字等内容走**非线性并带一点回弹**、各元素**自上而下错峰**（每项约 50ms）；整轮切换统一压进 **0.6s**；平板双栏的右栏也要逐项错峰且与左栏同时起步。
+
+**关键诊断**：临时把 `animationDuration` 拉到 2000ms 后逐帧抓拍，量左右半屏 p99 亮度发现切换全程两页都是 225 / 227 —— HdsTabs 自带的切页过渡**只有横向平移、没有淡入淡出**；同时底衬若留在页面里，会跟着平移一起被推走。⇒ 背景必须换层级，进场动画由页面自己演。
+
+| # | 任务 | 状态 |
+|---|------|------|
+| 39.1 | 背景换层级：`AmbientBackdrop` 上移到外壳 `pages/Index.ets` 的 `Stack` 最底层（`HdsTabs` 之外），三页删掉自己的底衬、import 与外层 `backgroundColor` | ✅ |
+| 39.2 | 新常量模块 `common/PageEnter.ets`：`ENTER_TOTAL_MS 600` / `ENTER_STEP_MS 50` / `ENTER_MIN_STEP_MS 8` / `ENTER_START_DELAY_MS 16` / `ENTER_SPRING_MS 280` / `ENTER_TAIL_MS 80` / `ENTER_OFFSET_X 16` / `ENTER_SPRING = curves.interpolatingSpring(0, 1, 420, 22)` + `enterStepFor(slots)` / `enterFinishMs(slots)` | ✅ |
+| 39.3 | 外壳只发令：`onContentWillChange(currentIndex, comingIndex)` 里按方向给 `enterTickIdiom/Poetry/Mingzi` 加减一（80ms 去抖、减弱动画跳过）；系统平移保持 `animationDuration(220)` | ✅ |
+| 39.4 | 页面自己表演：三页 `@Prop @Watch('onEnterTick') enterTick`，先 `enterShown = 0` 全部藏起，再逐项 `setTimeout(16 + i×step)` 里 `animateTo({ curve: ENTER_SPRING })` 把 `enterShown` 推到 `i + 1`；每项 `opacity 0→1` + `translate.x ±16vp→0` | ✅ |
+| 39.5 | 槽位：成语 7 项（0 头部 / 1~3 三组输入 / 4 副标题 / 5 按钮组 / 6 结果区）、诗词 5 项（0 头部 / 1 字格 / 2 按钮组 / 3 识图预览 / 4 结果区）、名士 14 项（0 头部 / 1 条件条 / 2 按钮组 / 3 提示行 / 4~12 九个条件行 / 13 结果区） | ✅ |
+| 39.6 | 平板右栏独立一组序号：`enterShownR` + `RIGHT_SLOTS 6`，与左栏同一时刻起步；`ResultArea(rightSide)`、`ResultList` 的 `@Prop enterShown/enterSlots/enterDir` 负责逐项，诗词页宽屏空状态也挂 R 槽位 | ✅ |
+| 39.7 | 0.6s 与 50ms 的取舍：间隔按项数算 `clamp((600-16-280)/(slots-1), 8, 50)` —— 成语 / 诗词 / 右栏 50ms，名士压到 23ms | ✅ |
+| 39.8 | 回弹收敛：偏移 22vp → 16vp，弹簧由 `interpolatingSpring(0,1,260,14)`（ζ≈0.43、过冲约 21%）改为 `interpolatingSpring(0,1,420,22)`（ζ≈0.54、过冲约 13%，16vp 里约 2vp） | ✅ |
+| 39.9 | 减弱动画：`accessibility.isAnimationReduceEnabledSync()` 取一次并 try/catch，开启时整段跳过，退化为系统横向平移 | ✅ |
+| 39.10 | 双端验收：手机中途帧可见「标题先亮 → 字格偏暗 → 按钮未出」的梯次、落位无残留；平板用临时慢放抓四帧证明右栏与左栏同时起步、各自逐项，验证后慢放与临时日志全部还原 | ✅ |
+| 39.11 | 版本号统一为 **v3.3**（`versionName` 3.3；`versionCode` 沿用 3500000 不动，避免 `install -r` 因降级被拒） | ✅ |
+
+**踩坑记录**
+
+1. **发令只能用 `onContentWillChange`**：`onChange` 在切换动画结束后才回调，动画期间 `currentIndex` 仍是旧页，按它取「当前页」会算错；`willChange` 里的 `currentIndex` 还是旧页，正好用来判方向。
+2. **同帧多条 `animateTo` 会互相覆盖曲线**：逐项动画必须每项改不同下标（`enterShown = i + 1`）；`enterShown = 0` 后第一项还要隔一帧才有起点（ArkUI 动画从「已渲染值」起步）。
+3. **HdsTabs 懒创建 → 首访无动画**：首次切到某页时组件当场创建，`@Prop` 初值不触发 `@Watch`，三页都要在 `aboutToAppear` 补一次触发。
+4. **0.6s 窗口与「每项 50ms」天然冲突**：名士 14 项按 50ms 要 950ms，只能按项数压缩间隔。
+5. **`animationDuration` 不能拉到 600**：整页会慢慢推过去、错峰被滑走吞掉；系统平移保持 220ms，0.6s 只约束内容自己的演出。
+6. **`springMotion` 看不到回弹**：实测几乎不过冲（单调回到 0），要回弹得用参数直观的 `interpolatingSpring`。
+7. **轴选 x 不选 y**：横向偏移天然带方向感；纵向位移与系统横向滑动叠加会显得乱。
+8. **改长文档要用脚本读全文再写**：`tools.read` 分页读取会截断，据此重写会把文件写丢。
+
+## 阶段 40：成语页检索退场 + 条件摘要框（Blur Glide Menu）（2026-10-31）✅ 完成
+
+| 子项 | 内容 | 状态 |
+| --- | --- | --- |
+| 40.1 | 三组输入 + 说明 + 检索键首次检索时**自上而下每 34ms 逐项淡出**，位移指向摘要框中心、同时缩到 0.9（`EXIT_CURVE` = `cubicBezierCurve(0.23, 1, 0.32, 1)`） | ✅ |
+| 40.2 | 消失点用运行时几何：`Header().onAreaChange` 记标题底边 → `panelAnchorY = y + height + 44`；各元素在 `InputGroup().onAreaChange` 里存 `geoCenterY[slot]`，量不到时兜底 `-(56 + slot×88)` | ✅ |
+| 40.3 | 退场节奏：一项一条 `animateTo`（改不同下标 `exitShown = i+1`），5 项走完 ≈336ms 后才置 `hasSearched`，避免半透明时被整块拔掉 | ✅ |
+| 40.4 | 摘要框 `ConditionPanel()`：摘要行恒 56 高 + `if (panelOpen)` 展开区，三组输入包在**同一个圆角矩形**内（`borderRadius(14)` + `clip`） | ✅ |
+| 40.5 | 展开：`animateTo({ curve: PANEL_SPRING(0,1,420,30), duration: 320 })` 让框高度长大（ζ≈0.73，过冲≈3%），内容 40ms 起、40ms 间隔、180ms 逐项淡进（`translate y -10 → 0`） | ✅ |
+| 40.6 | 收起反向：内容自下而上先退（30ms / 140ms），最后框缩回；`collapsePanel(onDone?)` 供二次检索收完再落结果 | ✅ |
+| 40.7 | 外观：新增配色 token `panel_bg`（base `#B8FBF5E7` / dark `#B8262019`，两套各 34 项）+ `backdropBlur(20)` + `glass_card_edge` 1vp 描边；出现用 `TransitionEffect.OPACITY.combine(translate y:-6)` 170ms | ✅ |
+| 40.8 | 窄屏 / 宽屏左栏统一：`hasSearched` 后一律渲染 `ConditionPanel()`，删掉旧的 `inputsCollapsed`；「二次检索」在框收起时只 `expandPanel()` | ✅ |
+| 40.9 | 验收：手机虚拟机（Pura 90，浅色）退场 / 抽屉展开；平板（2800×1840 双栏，浅色）同样流程；临时 `setColorMode(COLOR_MODE_DARK)` 截深色两帧后删除；`assembleHap` BUILD SUCCESSFUL，双端 `install -r` | ✅ |
+
+**踩坑记录**
+
+1. **`backgroundBlurStyle` 会把暖色底洗成灰块**：浅色模式下系统材质自带一层灰白纱，摘要框看着像禁用态；换成 `backdropBlur(20)` + 暖色 `panel_bg` 才回到「毛玻璃」。
+2. **内容延迟太长会露出空白抽屉**：首版 `PANEL_START_MS = 90`，框已长到全高、内容还没来（`w1.jpeg`）；改 40ms 起步后空隙消失（`x1.jpeg`）。
+3. **切子树自带淡入淡出**：`applySearch` 里的 `animateTo` 会让「移除输入区 / 插入摘要框 + 结果」自动交叉溶解，不必再手写。
+4. **struct 里别用 `get`**：摘要文本 `summaryText()` 写成普通方法，getter 在真机上返回 undefined。
+5. **编辑脚本写错路径会静默丢改动**：一次把结果写进 `.bak1`，导致 import / 常量 / 状态 / onSearch 四批改动没落盘（编译照样过，行为仍是旧的），后续全部批次白做 —— 必须写回目标文件并当场校验。
+
+
+## 阶段 41：v3.3 收口（退场与摘要框并行 / 50ms / 检索键分裂 / 回弹 1.5%）（2026-10-31）✅ 完成
+
+> 目标：把阶段 40 的「先退场、再换树、再淡入摘要框」改成一条连续动作，并让那个大「检索」键有交代——上移到将来的操作行、就地分裂成三枚按键。
+
+### 41.1 需求拆解
+
+1. 首次检索时，**退场与摘要框同时**演（不再是先后）。
+2. 退场逐项间隔 34ms → **50ms**。
+3. 大「检索」键改成**上移 + 分裂成三枚按键**，起步时刻仍是第 5 槽（200ms），与大键退场同刻结束。
+4. 抽屉伸缩的回弹过冲 3% → **约 1.5%**。
+
+### 41.2 做法
+
+- **摘要框预览层**：新增 `PanelPreview()`（与真摘要框同形：`panel_bg` + `backdropBlur(20)` + `glass_card_edge` + `borderRadius 14` + `clip`），放进「摘要框 or 三组输入」槽位的 `Stack(Alignment.TopStart)` 里 `.position({x:0,y:0})`，与真框天然同位；`panelIntro` 由 `PANEL_INTRO_DELAY_MS=80` 后 200ms `animateTo` 拉到 1。
+- **摘要行抽 Builder**：`ConditionPanel()` 里的那一行抽成 `PanelSummaryRow(tapable: boolean)`，预览层复用同一份外观（`tapable=false` 时不响应点击）。
+- **换树不走过渡**：`applySearch(q, handoff = false)`，首检索传 `true` 直接赋值，避免「预览消失 + 真框淡进」闪一下。
+- **检索键**：`SearchButton(gap)` 改 `Stack`，里面是 `.opacity(1 - keyMorph)` 的大键 + `if (exitActive)` 的三枚 `SplitKey(label, index, primary)`；`.translate({ x: enterShift(5), y: keyRiseY(gap) })`；`SplitKey` 的 `.translate({ x: splitSpread(index) })` + `.opacity(keyMorph)`。
+- **几键**：`IdiomSearchService.preview(query)` 只读算出匹配条数，`>= 2` → 3 键，否则 2 键（与换树后 `ActionButtons()` 一致，交班不跳）。
+- **回弹**：`PANEL_SPRING = interpolatingSpring(0, 1, 420, 33)`（ζ≈0.81 → 过冲 ≈1.5%）。
+
+### 41.3 参数
+
+| 参数 | 值 |
+| --- | --- |
+| `EXIT_STEP_MS` / `EXIT_DURATION_MS` | 50 / 200 |
+| `PANEL_INTRO_DELAY_MS` / `PANEL_INTRO_MS` | 80 / 200 |
+| `KEY_MORPH_MS` / `KEY_GAP` | 200 / 8 |
+| 首检索总时长 | 400ms |
+
+### 41.4 验证
+
+- 慢放（×8~10）逐帧：`S3` 摘要框与拼音组同时在场 → 并行成立；`S6`/`T6` 大键淡出 + 三键散开；`T7/T8` 三键落位。
+- 还原时长：平板 `E1`（摘要框 + 三键 + 2 条结果，与慢放末帧同位）、`E2`（折叠态「二次检索」只展开抽屉）；虚拟机 `N1`（2 键 + 空结果态）、`N4`（抽屉展开，三组同一圆角框、值保留）。
+- 构建 `assembleHap` BUILD SUCCESSFUL，HAP 1,734,645 B，双端安装成功。
+
+### 41.5 踩坑
+
+1. `snapshot_display` 单张 300~500ms，**抓不到 400ms 的过渡**——必须临时放大时长（`TEMP-SLOW`），截完还原并 grep 校验。
+2. 检索键如果继续走 `exitOpacity`，第 5 槽会整块消失、把分裂过程掐断；改成 `(1 - keyMorph)`。
+3. 预览层必须 `hitTestBehavior(HitTestMode.None)`，否则退场 400ms 内它会吃掉「检索」的第二次点击。
+4. 点击坐标一律来自 `uitest dumpLayout`：肉眼估的 y 让「展开修改」连点两次都没反应（文字真实位置 y 506~555）。
+5. 慢放帧里「大键还在」不是 bug：`keyMorph≈0.85` 时大键只剩 15% 不透明度（一整条淡红），判断依据应是「大键是否还在同一 y、三键是否已各就各位」。
+## 阶段 42：v3.3 修正 —— 分裂交给真实三键承接（2026-10-31）✅ 完成
+
+### 42.1 需求（用户实测反馈）
+
+- 初次检索时「元素淡出 + 按键分裂」放完到结果出现之间会**卡一下**，不连贯。
+- 分裂出来的三个按键与随后结果页那三个按键**位置不一样**。
+
+### 42.2 根因
+
+- 位置：分裂终点是公式推算的（`panelAnchorY` 取「标题底 + 44」），漏算 `ConditionPanel().margin({ bottom: 12 })` → 差 12vp。
+- 卡顿：分裂期用临时假按键 `SplitKey`，400ms 收尾时换成 `ActionButtons()` 真按键 → 换树重建子树。
+
+### 42.3 改动
+
+| 文件 | 改动 |
+| --- | --- |
+| `entry/src/main/ets/pages/idiom/IdiomSearchPage.ets` | 删除 `SplitKey` / `splitSpread` / `keyRiseY(gap)`；新增 `keyX`、`actionX/actionY/actionW/actionH`、`keyRiseY()`、`splitDx(i)`、`splitDy()`、`splitReveal()`；`SearchButton()` 去掉 `gap` 参数；`ActionButtons()` 每颗外包 `Row().layoutWeight(1)` 并挂 `translate`；窄屏/宽屏同槽改 `Stack(TopStart)` 双 if；卡片延迟封顶 `Math.min(idx, 6) * 45` |
+
+### 42.4 参数（不变）
+
+- `EXIT_STEP_MS 50` / `EXIT_DURATION_MS 200` / `PANEL_INTRO_DELAY_MS 80` / `PANEL_INTRO_MS 200` / `KEY_MORPH_MS 200` / `KEY_GAP 8`；`PANEL_SPRING = interpolatingSpring(0, 1, 420, 33)`（过冲 ≈1.5%）。
+
+### 42.5 踩坑
+
+1. **自定义组件上链属性会破坏内部 `layoutWeight`**：`GlassButton(...).translate(...)` 让三颗按钮各撑满整行（实测只剩第一颗、后面被裁）；位移要挂在 `Row().layoutWeight(1)` 外层。
+2. **交接必须同一棵子树**：`if (!hasSearched) SearchButton()` 与 `if (exitActive || hasSearched) ActionButtons()` 同槽并存，换画面时条件不翻转，才没有重建。
+3. 慢放验证照旧要临时把时长放大 8 倍（`TEMP-SLOW`），截完还原并 grep 校验。
+
+### 42.6 验证
+
+- 手机真机：`H1`（退场中段）→ `M1`（`keyMorph` 中段，三键横向列宽与终态一致、整体在上移）→ `N1`（换画面：三键已就位、结果卡自上而下错峰淡入，无空档）；终态 `K1`（82 条）。
+- 平板：`T9` 终态（三键 + 82 条，列宽与分裂期一致）。
+- `assembleHap` BUILD SUCCESSFUL；双端 `install -r` 成功；`grep TEMP-SLOW` 无残留。
+
+---
+
+### 42.7 纵向落点二次修正：@State 驱动 + 落点差半行（2026-10-31）
+
+- 现象：分裂后三键没有上移，加载完突然出现在上方并抽搐。
+- 取证：`hilog` + `IDIOMRISE` 证明 `@Builder` 在 `animateTo` 期间只在新旧终值各算一次（整段只有 3 条日志），中途不逐帧求值；`splitDy()` 里那行日志一次都没出现。
+- 做法：删掉 `splitDy()` / `layoutActionCenterY()` / `keyRiseY()`，改用 `@State splitY` / `@State keyLift`，在第 5 槽一次性算出 `target - layout` / `target - key` 并与 `keyMorph = 1` 放进同一条 `animateTo`；换画面时复位为 0。
+- 公式修正：`panelAnchorY` 是摘要框**中心**，落点 = `panelAnchorY + PANEL_ROW_H / 2 + PANEL_MARGIN_BOTTOM + gap + h / 2`（第一版多算一整行 28vp，实测跳 92px）。
+- 验证：慢放换画面前后底边 845px vs 837px（差 2.4vp）；手机 3 键/2 键、平板双栏 3 键终态均正确；`TEMP-LOG`、`TEMP-SLOW` 全部清除，时长恢复 50/200/80/200/200ms。
+
+## 阶段 43：v3.3 按键先动、结果后到（2026-10-31）✅ 完成
+
+### 43.1 需求演进
+- 用户先后提了三次：①结果要跟着按键一起加载；②改了之后仍觉得「大键开始动画太晚」；
+  ③最终定稿：**点「检索」立刻开始分裂上飞，结果卡跟在按键动画之后加载**。
+
+### 43.2 做法（最终版）
+- `playInputExit(q)` 一进来（0ms）就起动画：`setTimeout(16ms)` 后一条 `animateTo(160ms)` 把
+  `splitP` 1→0、`splitY` 0→`rise`、`keyLift` 0→`rise`（`rise = actionCenterY(gap) − 检索键中心`，负值向上）。
+- 输入区淡出（每 25ms 一项、100ms 时长）与摘要框预览淡进（20→160ms）**同时**进行，不再串行。
+- 抬头 200ms（= 16 + 160 + 24）才换画面：`applySearch(q, true)`，同一帧把 `splitY / keyLift` 归零
+  —— 布局上移与位移归零互相抵消，三键停着不动；结果在这一刻之后才出现。
+- 换画面 220ms 后交班：撤掉 `PanelPreview`、`exitActive = false`、`splitP` 复位 1。
+- 结果卡入场 180ms / 每张 +25ms；三键窄屏 `zIndex(2)` 从结果上方飞过。
+
+### 43.3 踩坑
+1. 换画面与位移归零必须**同一帧**，且都在动画结束之后；顺序错了就是一帧瞬移。
+2. `splitDx()` 静止态必须返回 0（`exitActive ? splitP : 0`），否则收尾 `splitP = 1` 会把三键叠到中心。
+3. 摘要框预览必须在换画面之前淡完（160 < 200），否则交班闪一下。
+4. 位移挂外层 `Row`，链在 `GlassButton` 上会丢 `layoutWeight(1)`。
+
+### 43.4 验收
+- 8 倍慢放 8 帧：点按即分裂 → 三键上飞并越过淡出中的输入格 → 停在摘要框下方 → 换画面位置不变 → 结果淡入。
+- 手机 1256×2760（93 条 / 两键未命中两条路径）、平板 2800×1840 双栏（82 条）终态均正确。
+- 临时 `TEMP-SLOW` 已还原（grep 0 处），版本号未改（3.3 / 3500000），双端 `install -r` 成功。
+
+## 阶段 44：v3.3 动效审查与令牌化（2026-10-31）✅ 完成
+
+### 44.1 做法
+- 按动效八条（目的与频率 / 曲线时长 / 物理起点 / 可打断 / 性能 / 无障碍 / 一致性 / 遗漏机会）通读全部动画代码，
+  逐条到 `file:line` 确认，只留下确实成立的 9 条。
+- 新建 `entry/src/main/ets/common/Motion.ets`：2 条曲线（`EASE_OUT_STRONG` / `EASE_OUT_SOFT`）+ 1 条按压弹簧 +
+  4 档时长（110/180/250/240）+ 错峰（25ms、封顶 6）+ `isReducedMotion()`。
+- 把三个检索页、`GlassButton` / `InfoButton` / `IdiomInputCell` / `ResultList` 里的手写曲线与时长换成令牌引用，
+  共清掉 14 处 `Curve.EaseOut`。
+
+### 44.2 两条真正的修（其余是统一与打磨）
+1. **布局动画**：`IdiomInputCell` 聚焦时 `border.width` 1→2 带隐式动画 → 每点一次格子就布局一次。
+   改为边框恒 1vp，聚焦的 2vp 主色圈用 `outline({ width, color, radius, style })` 画在盒外（只重绘）。
+2. **按压曲线**：`GlassButton` 按下用 `Curve.FastOutSlowIn`（缓入缓出）+ 抬起 400ms 弹簧 —— 按下第一帧几乎不动、
+   抬起要等半天。改强 ease-out 110ms + `springMotion(0.26, 0.72)` 240ms；缩放 0.94→0.96。
+
+### 44.3 无障碍
+- `playInputExit()` 首行判 `isReducedMotion()`：命中则跳过整段分裂/淡出/缩放，直接 `applySearch(q, true)`。
+- `expandPanel()` / `collapsePanel()` 同样在减弱动画时直接到位（不等 320ms 高度弹簧）。
+
+### 44.4 一致性
+- 结果卡入场统一 180ms + 25ms 错峰、封顶 6 档（原：成语 180/25、名士 250/45、诗词 `ResultList` 250/45）。
+- 诗词页 4 处 `TransitionEffect.OPACITY.animation()` 补上曲线。
+- 单结果卡 / 信息按钮的 `scale(0.9)` 收到 0.94。
+
+### 44.5 遗漏机会（顺手补一处）
+- 「清空所有」回初始界面原本硬切：整块换树放进 `animateTo(180ms, EASE_OUT_STRONG)`，结果淡出 / 输入格淡入交叉溶解。
+
+### 44.6 验证
+- 手机：聚焦描边正常、检索 88 条、抽屉展开、二次检索正常；平板：82 条双栏正常；诗词 / 名士页无异常。
+- `assembleHap` BUILD SUCCESSFUL（仅剩 `animateTo` / `AlertDialog` 的既有 deprecation 警告），双端 `install -r` 成功。
+- 版本号仍 3.3 / 3500000（用户长期约束）。
+
+## 阶段 45：v3.3 首次检索放慢 + 结果分批上屏（2026-10-31）✅ 完成
+
+### 45.1 需求
+- 「加载动画偏快」；「按键分裂演完到结果卡片出现之间有间隔」；「抽屉回弹过冲调到 1%」。
+
+### 45.2 先量化「间隔」
+- 临时在 `applySearch()`（换画面）与结果区 `.onAppear` 打 `hilog` 时间戳：
+  2 条结果 → 22ms；93 条结果 → **460ms**。状态写入本身只要 1~3ms，卡的是 93 张卡片同帧布局。
+- 结论：所谓「间隔」= 一帧 460ms 的空白，与动画时长无关。
+
+### 45.3 分批上屏
+- 新增 `@State shownCount` + `revealResults()`：先铺 `RESULTS_FIRST_BATCH = 6` 张，其余每帧补
+  `RESULTS_BATCH_STEP = 30` 张；`ForEach` 改为 `this.results.slice(0, this.shownCount)`。
+- 错峰只给首批；`onClearAll()` 清定时器并归零。
+- 实测换画面 → 内容出现：**460ms → 54ms**。
+
+### 45.4 节奏放慢
+- `EXIT_STEP_MS` 25→30、`EXIT_DURATION_MS` 100→150、`PANEL_INTRO_DELAY_MS` 20→40、
+  `PANEL_INTRO_MS` 140→200、`KEY_MORPH_MS` 160→**300**、`HANDOFF_MS` 220→260。
+- `FLIP_MS` 去掉多余的 `+24`：按键一落位就换画面，不再留空档。
+
+### 45.5 回弹 1%
+- `PANEL_SPRING` 阻尼 33→34（ζ≈0.829，过冲 ≈0.94%；33 时 ≈1.5%）。
+
+### 45.6 验证
+- 手机：93 条结果紧跟按键落位出现；上滑到底部后补批次齐全；抽屉回弹收敛；清空所有正常。
+- 平板双栏已装；BUILD SUCCESSFUL；版本号未动。
+
+## 阶段 46：v3.3 落位回弹 + 整体放缓 + 移除滑动切页（2026-10-31）✅ 完成
+
+### 46.1 需求
+- 「按钮分裂归位后加一点上下回弹（过冲 0.8%）」；「清空所有复原也加同样的回弹」；
+  「整体动画适当放缓」；「取消左右滑动切页，只保留页签栏切换」。
+
+### 46.2 落位弹簧
+- 新增令牌 `LAND_SPRING = interpolatingSpring(0, 1, 600, 41)`（ζ≈0.837 → 过冲 0.8%）+ `LAND_SPRING_MS = 300`。
+- 分裂动画拆成两条：纵向（`splitY` / `keyLift`）走 `LAND_SPRING`，横向扩散与淡出（`splitP`）仍走 `EASE_OUT_STRONG`
+  —— 不透明度过冲会闪。
+- `FLIP_MS = SPLIT_FRAME_MS + KEY_MORPH_MS`（346ms）晚于弹簧收敛（约 300ms），换画面仍然不跳。
+
+### 46.3 清空所有的复原回弹
+- `onClearAll()`：`drop = geoCenterY[4] - actionCenterY(gap)`，把 `keyLift` 先设成 `drop`（写在 animateTo **之前**，
+  新树第一帧就带位移），隔 `FRAME_MS` 再用 `LAND_SPRING` 弹回 0。
+- 于是「三键散开」与「大键合回」是同一条曲线；「减弱动画」开着时整段跳过。
+
+### 46.4 放缓
+- `EXIT_STEP_MS` 30→34、`EXIT_DURATION_MS` 150→170、`PANEL_INTRO_MS` 200→230、`KEY_MORPH_MS` 300→330、
+  `HANDOFF_MS` 260→300、`PANEL_ITEM_MS` 180→200、`MOTION_BASE_MS` 180→200。
+
+### 46.5 移除滑动切页
+- `pages/Index.ets` 删除 `PanGesture`（横向 60vp）整段；`HdsTabs` 仍 `.scrollable(false)`，只保留点页签切换。
+- ⚠️ 用行号 splice 删这段时把外层 `Column` 的 `}` 一起删掉了（`alignItems` 报「不存在于 HdsTabsAttribute」），
+  已补回。文件是 CRLF，按行删改必须连 `\r` 一起算。
+
+### 46.6 验证
+- 6 倍慢放：k0 飞行中 → k2~k5 已落位（换画面前）→ k6/k7 结果淡入，落位后无多余位移。
+- 正常速度：左右滑动不再切页；检索 93 条 → 清空所有 → 回到初始界面且大键无残留位移；平板双栏已装。
+- BUILD SUCCESSFUL；版本号未动（3.3 / 3500000）。
+
+## 踩坑（阶段 42 补充）
+- 动画中「跟着连续变化」的量必须是 `@State` 数字本身，不能在 `@Builder` 里调用「读 `@State` 的方法」再算 —— 只会拿到终点值。
+- 不要在动画期间用布局实测当终点：输入区还在占位，操作行位置在屏幕下方。
+
+---
+
+## 阶段 47：平板双栏「左右各自加载」（2026-10-31）✅ 完成
+
+### 47.1 需求
+
+用户：以分栏为界限，两边独立加载动画；左栏沿用先前的，右栏背景用左右淡进淡出、方向与左栏一致；切换页面时中间分栏不动。
+澄清（ask_user_question）：右栏要「背景横向淡进淡出 + 内容整块跟随」两者都要。
+
+### 47.2 做法
+
+1. `pages/Index.ets`：`.animationDuration(this.isWide ? 0 : 220)` —— 平板关掉整页横滑，否则两栏会被一起搬走。
+2. `common/PageEnter.ets`：新增 `RIGHT_OFFSET_X = 22`、`RIGHT_ENTER_MS = 340`、`RIGHT_VEIL_MS = 520`。
+3. 三个检索页：新增 `@State rightEnter`、`@State rightVeil`；`onEnterTick()` 里平板分支把右栏从 0 淡到 1、遮罩从 1 扫到 0；
+   `enterShownR` 保持 `ENTER_ALL_SHOWN`（右栏不再逐项）。
+4. 右栏结构：外层 `Column(layoutWeight/padding)` → `Stack` → 内层 `Column().opacity().translate()` + 遮罩 `Column().linearGradient()`。
+5. 新增配色 token `veil_clear`（base `#00F7F1E3` / dark `#001C1813`，两套各 35 项）供渐变透明端使用。
+
+### 47.3 踩坑
+
+1. `Color.Transparent` 是「透明黑」，做渐变端点会把整块拉灰（实测 (189,183,169) vs 环境 (238,219,205)）→ 必须用同 RGB、alpha 0 的 token。
+2. `Stack` 包起来的右栏，`.layoutWeight(1 - splitRatio)` 必须留在**外层** Column，挪到内层右栏会掉宽度。
+3. poetry 页的右栏比 idiom/mingzi 多一级缩进（它在 `if (windowWidth > 600)` 里面），字符串锚点要分别写，否则替换不中。
+4. 批量替换 `onEnterTick` 尾部时多留了一个 `}`，编译报 `alignItems does not exist` 之类 —— 改完立刻打印方法全文核对。
+5. poetry/mingzi 早就 import 了 `EASE_OUT_STRONG`，再补一行 import 会 `Duplicate identifier`。
+
+### 47.4 验收
+
+- 3~5 倍慢放连拍：遮罩整片盖住右栏 → 转米白扫开 → 右栏内容整块浮现；分栏线全程不动。
+- 正常速度：三页切换都正常；手机窄屏仍是 220ms 横滑。
+- BUILD SUCCESSFUL，双端 install 成功，版本号未动。
+
+## 阶段 48：v3.3 名士页「条件摘要抽屉 + 首次检索退场」移植（2026-10-31）✅ 完成
+
+### 48.1 需求
+
+- 用户：「名士页也做成摘要抽屉样式，相关动画效果也一样」。
+- 即把成语页（阶段 40~46）那套「九行条件逐项收进条件摘要框 → 大检索键就地分裂成操作键 → 结果后到」「摘要框可展开成抽屉（Blur Glide Menu）」整套搬到名士页。
+- 约束：不改版本号（`versionName "3.3"` / `versionCode 3500000`）。
+
+### 48.2 做法（与成语页的差异）
+
+| 项 | 成语页 | 名士页 |
+| --- | --- | --- |
+| 退场项数 | 5（三组输入 + 说明 + 检索键） | 10（九行模式 + 检索键） |
+| `EXIT_STEP_MS` | 34 | 20（9 行 × 20 + 150 = 310ms，仍早于 `FLIP_MS` 346ms） |
+| 分裂键数 | 2 或 3（按命中数） | 固定 2（首检索后「清空当前」不出现） |
+| 抽屉项数 | 4 | 10（9 行 + 底部说明） |
+| 抽屉高度 | 无上限 | 上限 400vp，超出内部滚动 + 底部渐隐 |
+| 条件区位置 | 页面固定区 | 页面固定区（九行从可滚动区搬到摘要框下方） |
+
+- 摘要文案：`summaryText()` = 各 `step.label` 以 ` · ` 连接；`CriteriaBar`（已检索面包屑）删除。
+- 首次检索时 `this.steps` 还是空的，预览层会显示「未填条件」——新增 `@State pendingSummary`，在 `playInputExit(next)` 里先把这次的条目标题拼好，`PanelSummaryRow(tapable, text)` 由调用方传入文案。
+- 平板宽屏：操作键从右栏顶部移到左栏摘要框下面，右栏只留结果。
+
+### 48.3 踩坑
+
+1. 九行全部塞进页面固定区后，抽屉展开会把操作键顶到页签栏后面 → 抽屉内容加 `constraintSize({ maxHeight: 400 })` + 内部 `Scroll`，并叠一条 20vp 的底部渐隐（`panel_bg_clear` → `panel_bg`）提示可滚。
+2. 摘要框预览层必须 `position({ x: 0, y: 0 })` 绝对定位：名士页九行在可滚动区里，预览若参与布局会把内容顶下去。
+3. 预览层文案读 `steps` 会拿到上一轮的旧值（首检索时为空）→ 用 `pendingSummary` 单独存。
+4. 抽屉展开时「二次检索」仍在视口内（成语页也是），所以点它要分两步：收起状态先 `expandPanel()` 并 `return`，展开状态才真正检索。
+
+### 48.4 验收
+
+- 手机 192.168.3.4:39391（1256×2760）：朝代选「先秦」→ 检索：九行逐项上收、摘要框淡进、两键飞落、结果 15 条；点「展开修改」框向下延伸、九行逐项淡进、内部可滚；收起复原；「清空所有」回到九行 + 大键，带落位回弹。
+- 平板 192.168.3.124:42243（2800×1840）：左栏摘要框 + 两键、右栏结果 15 条；抽屉在左栏展开，右栏不动。
+- 慢放（4 倍）确认「点按即分裂、换画面不跳」；期间发现并修掉预览层文案问题（`s1.jpeg` 显示「未填条件」）。
+- BUILD SUCCESSFUL，双端 install 成功，版本号未动。
+
+### 48.5 修正：分裂落点比真实位置低一个按钮高（同日）
+
+- 用户报：「名士检索键加载动画时最终的按键位置和展示检索结果界面中按键的位置不一样」。
+- 根因：操作槽位写成了 `Column { SearchButton(); ActionButtons() }`，退场期间两者同时挂载 → 操作行布局中心比检索键低 48vp；而补偿位移按检索键中心算，落点整体多走一个按钮高，换画面时回跳。
+- 修法：操作槽位改成 `Stack(TopStart)` 同层叠加（两个 `if` 各占一层），`.zIndex(2)` 挪到 Stack 上。
+- 验证：3 倍慢放连拍（`H:/Videotransfer/M2/M3.jpeg`）按钮红条带同为 `y 811~888`；手机 `pz.jpeg`、平板 `tp2.jpeg` 终态正常；`BUILD SUCCESSFUL`，双端 `install -r` 成功；版本号未动。
+
+### 48.6 修正：摘要框落定后抽一下 + 副标题硬切（同日）
+
+- 用户报：「摘要框在动画加载完成后会向上抽搐一下，而且副标题的切换很生硬，改成整段文字渐进渐出，时间点为页面其他动画加载完成后」。
+- 抽搐：`ConditionPanel` 入场过渡带 `translate({ y: -6 })`，与同位的预览层描边错开 → 去掉位移，只留 `OPACITY`。
+- 副标题：新增 `@State subText / subOpacity` + `swapSubtitle()`（110ms 淡出 → 换字 → 200ms 淡入），在首次检索的**交班计时器**（`FLIP_MS + HANDOFF_MS`）、`onClearAll`、`onUndo` 归零时各调用一次；`isReducedMotion()` 直接换字。
+- 验证：3 倍慢放 + 交班拉到 1500ms 连拍 10 帧（`H:/Videotransfer/T0..T9.jpeg`）：T6 结果已出、副标题仍是旧文案，T9 才换成新的；摘要框上边沿检测 T1~T9 全在 `y=645` 不动。正常速度 `fin.jpeg` / `clr.jpeg`；`BUILD SUCCESSFUL`（HAP 1,831,414 B），双端 `install -r` 成功；版本号未动。
+
+
+### 48.7 同一修正在成语页
+
+- `entry/src/main/ets/pages/idiom/IdiomSearchPage.ets` 的 `ConditionPanel` 入场过渡原为 `OPACITY.combine(translate({ y: -6 }))`（原 :547-549），同样只保留 `OPACITY`。
+- 成语页副标题是固定文案（:441），不随检索切换，无需渐隐渐显——此处只有「抽搐」一条。
+- 验证：3 倍慢放连拍 `H:/Videotransfer/U0..U7.jpeg`，摘要框上边沿 U1~U7 恒为 `y=594`，无位移；常量已还原，HAP 1,831,550 B，双端 `install -r` 成功。
+
+**踩坑（48 补充）**
+
+- 「抽搐」的成因不是高度动画，而是**过渡里的位移 + 同位预览层**；只改不透明度即可，别把预览层去掉（去掉会露出真框从透明淡进的闪）。
+- 两个页面结构不同（成语页一行三组条件、名士页九行列表），但抽搐是同一种写法导致的，改一处要 grep 另一处确认。
+
+
+## 阶段 49：小窗 / 分屏下未检索页可滚动（2026-10-31）✅ 完成
+
+### 49.1 问题
+- 手机小窗（上下分屏）里，名士检索初始页九行条件放不下，「检索」键被顶出窗口，页面又不能滚动 → 点不到检索键。
+
+### 49.2 改法
+- `MingziSearchPage.NarrowLayout()` 拆成两支：
+  - `!hasSearched`：`Scroll` 包住 `Header` + 条件槽位（`ModeList` + 可选 `PanelPreview`）+ 操作槽位（`SearchButton` + 可选 `ActionButtons`），`.layoutWeight(1)`、内层 `constraintSize({ minHeight: '100%' })`、底部 `padding({ bottom: barInset })`，`onScrollFrameBegin` 继续回调 `onScrollOffset`。
+  - `hasSearched`：保持原结构（摘要框 + 操作键 + 结果 `Scroll(this.scroller)`）。
+- 操作键与检索键仍是同层 `Stack` 叠加，分裂落点补偿（§22.7）不变。
+
+### 49.3 验收
+- 分屏（窗口约半屏）：初始只见 4 行 → 上滑后九行 + 检索键可见 → dumpLayout 得到 `检索 [557,2260][699,2319]` → 点击弹「请先填写检索条件」。
+- 全屏回归：九行 + 检索键一屏可容纳；「朝代：先秦」→ 检索 → 摘要框 + 两键 + 15 条结果，动画与落点无回归。
+
+### 49.4 成语页同步
+- `IdiomSearchPage.NarrowLayout()` 同样改成 `!hasSearched` 整段进 `Scroll`、`hasSearched` 保持原结构；全屏三组条件 + 检索键渲染正常，首次检索动画无回归。诗词页未改。
+
+### 49.5 坑
+- 分屏时窗口底边被系统手势区占据，按截图目测的按钮下沿去点会落空；一律用 `uitest dumpLayout` 的真实 bounds 取中心。
+- `Scroll` 里如果不给内层 `constraintSize({ minHeight: '100%' })`，内容比视口矮时会被垂直居中，标题会跑到屏幕中间。
+
+## 阶段 50：名士详情「卡片形变成弹窗」（2026-10-31）✅ 完成
+
+### 50.1 需求
+点名士结果卡片 → 卡片本身上浮放大到屏幕中央成弹窗（过冲 0.8%）、其余内容变暗虚化；名字滑到居中、朝代跟随淡出；落定后逐行 50ms 淡入；关闭键右上角弹出；高度自适应、上限 50% 屏高，超出则竖向翻页；关闭反序播放。
+
+### 50.2 做法
+- `entry/src/main/ets/components/MingziResultCard.ets`：新增 `@Prop morphId`，卡片 `Row` 挂 `.geometryTransition(morphId)`。
+- `entry/src/main/ets/pages/mingzi/MingziSearchPage.ets`：删掉 `CustomDialogController`，改用页面内 `DetailOverlay()` + `DetailCard()`；新增 `DETAIL_*` 常量、`DetailPair`、`detailPairs/detailPages/detailNameShiftMax/detailPageHeight/detailPageContentHeight/openDetail/closeDetail/onDetailPageChange`、`DlgHighlight/DlgRow/DetailCard/DetailOverlay`。
+- 打开：一条 `animateTo(LAND_SPRING, 380ms)` 完成形变 + 遮罩 + 名字；另一条 `EASE_OUT_STRONG(220ms)` 淡出朝代；`340ms` 起逐行 50ms；`400ms` 起关闭键 `LAND_SPRING(300ms)`；末尾兜底 `detailRows = 99`。
+- 关闭：行自下而上退 → 关按钮 → 名字/朝代反向 → `detailOpen = false`（共享元素自动缩回卡片）。
+- 分页：`detailPages()` 每页预算 9（长值按 `ceil(len/16)` 计费），`pages.length > 1` 才挂 `Swiper(vertical)`；翻页区高度改由 `detailPageContentHeight()` 决定。
+- 新增颜色 `card_bg_clear`（base `#00FFFDF5` / dark `#00262019`），两套各 37 项。
+- 顺手删掉 213 行旧 `@CustomDialog struct MingziDetailDialog` 死代码。
+
+### 50.3 坑
+- Stack 子节点 `.align()` 无效 → 两条边缘虚化落在中间，正好盖住第 6 行，看着像「某行半透明」（实测该行亮度 179，其它 435+）；改 `alignContent: TopStart` + `.position` 修复。
+- 卡片上挂 `constraintSize({ maxHeight: '50%' })` 不会贴合内容而是撑满，短列表留白；改为翻页区自己限高。
+- ForEach key 必须带页号，否则跨页复用的行会停在半透明。
+
+### 50.4 验收
+- 手机：形变打开/关闭、逐行淡入、关闭键位置、两页翻页（韩非 2 页、屈原末页 5 行自动收矮）均正常；行亮度一致。
+- 平板 `192.168.3.124:42243` 本轮离线，未验（下次联网补验）。
+
+### 50.5 修订（同日）
+- `geometryTransition` 实测无效（两种 `follow` 写法都试过，第一帧就已终态）→ 改为手动形变：卡片挂 `.id()`，弹窗打开前 `getRectangleById` 量矩形，`scale + translate` 从卡片位置长到屏幕中央（`DETAIL_MORPH_MS 380` + `LAND_SPRING`），关闭反向缩回。
+- 翻页不再改窗口高度：固定 `detailPageHeight()`；单页仍贴合内容。
+- 翻页内容上下各留 26vp，首行不再被边缘渐变遮住。
+- 关闭改为「整块淡出」（`detailContentFade`，180ms）+ 60ms 后缩回卡片，不再逐行反序。
+
+### 50.6 重修（同日，三条反馈）
+
+**反馈**：①翻页被强行隔断、每次翻页都重演动画 → 要无极滚动、排版与旧版一致；②关闭没缩成原卡尺寸、有明显重叠、名字/朝代没正常显示；③平板展开与收回都没按原卡片位置。
+
+**做法**
+- 删除 `Swiper` 分页体系（`detailPages` / `detailPageContentH` / `onDetailPageChange` / `detailPage` / `detailSwiper` / 测量用的 `DlgRowMeasure`、`DetailMeasureBox`），改单个 `Scroll` + `ForEach(detailPairs)` 一把渲完，`height(detailContentH())` 限高即无极滚动，行不重建 → 无重放动画。
+- 关闭改为「内容淡出 180ms → 关闭键缩回 300ms → +60ms 用 `LAND_SPRING` 把 `detailW/detailH/detailOX/detailOY/detailRadius` 一起退回 `detailFrom` → 动画结束再 `resetAll()` 卸载」；`resetAll` 与卸载错开，避免 `detailContentFade` 在已缩小、`clip(true)` 的框里闪回。
+- 新增 `detailHideCard` + `cardVeil(item)`：源卡片在展开期间隐形，缩回后复现（消除叠影）。
+- 起点矩形改用点击事件：`e.windowX - e.x` / `e.windowY - e.y`（窗口坐标），并把 `detailW` 起点设为卡片宽；`constraintSize` 去掉 `maxWidth: 560`，宽度上限提到 720vp。
+
+**坑**
+1. `area.globalPosition` 与 `getRectangleById().windowOffset` 在平板右栏这种滚动容器里返回的是相对父容器的坐标（实测 16vp，真实 650vp）→ 起点算到左栏；只有 `ClickEvent.windowX - x` 是窗口坐标。
+2. `constraintSize({ maxWidth: 560 })` 会把起点宽度从 570vp 压到 560vp，第一帧就盖不住卡片。
+3. `animateTo` 配 `interpolatingSpring` 时 `duration` 基本无效（约 200ms 就收敛），放大 duration 也拍不到中间帧。
+
+**验收**：手机（`o1/o3` 展开、`s1/s2` 连续滚动、`c1/c2/c3` 关闭复原）与平板（`x1` 展开、`x3` 关闭复原）全部通过；平板几何日志 `wx=650.22 / wy=89.33 / rw=570.22 / rh=54.67`（vp）与 `dumpLayout` 的 `[1463,201][2746,324]`（px÷2.25）吻合。版本号未动（`versionName "3.3"` / `versionCode 3500000`）。
+
+## 阶段 51：名士弹窗宽度 / 描述分组 / 识图样图（2026-11-01）✅ 完成
+
+### 51.1 需求（用户三条反馈，m08446 原意）
+
+1. 平板上的名士详情弹窗**太宽**，收窄到屏宽的 70% 左右（手机不动）。
+2. 描述若干条时，`描述1…` 前面要**加一行「其他描述」小标题**，和朝代/品阶这些字段分开。
+3. 「信息」页「识图填字」下面的样图换成**纯 6×5 字格、不带游戏 UI 外框**的图。
+
+### 51.2 做法
+
+- **宽度**：`entry/src/main/ets/pages/mingzi/MingziSearchPage.ets` 的 `detailBoxWidth()` 改成 `base = min(windowWidth*0.88, 720)` → `windowWidth > 600 ? base*0.7 : base`（断点沿用 600vp；平板 720→504vp）。
+- **描述分组**：`DetailPair` 增 `section: boolean`；`detailPairs()` 先收集 `描述N`，非空时先插一行 `{ label: '其他描述', section: true }`；`detailRowH(pair)` 对 section 返回 `DETAIL_SECTION_H = 38`；`@Builder DlgRow` 对 section 用 `Text` 15/600 + `margin({ top: 8, bottom: 10 })` 单独渲染，错峰门控（`detailRows`）照旧参与。
+- **样图**：`entry/src/main/ets/components/AppInfoDialog.ets:226` 的 `HelpImage` 比例改 `1256 / 927`；`entry/src/main/resources/base/media/help_poetry_grid.jpg` 用 `H:/projects/info/需求/ocr/screenshot_20261019_110313.jpg`（1256×927）原样覆盖，文件名不变。
+
+### 51.3 坑
+
+1. `detailBoxWidth()` 只决定**终点宽度**；形变起点必须继续用 `detailFrom.w`（卡片实测宽），否则第一帧盖不住卡片（24.7 坑 2 的复发点）。
+2. section 行必须**同时**改 `detailRowH()` 与 `DlgRow`：只改渲染不改行高 → 无极滚动高度少算 38vp，末行被裁；只改行高不改渲染 → 标题行是空的，看起来像多了一段空白。
+3. 换样图**不能改文件名**：`$r('app.media.help_poetry_grid')` 是按名索引的，改文件名要连带改代码，容易漏。
+4. 新图比例与外框都变了，`HelpImage` 的 `ratio` 必须跟着改成 `1256/927`，否则按旧的 `1000/783` 计算高度会留白或裁字。
+
+### 51.4 验收
+
+- 平板 2800×1840：弹窗约 1123px（≈499vp），「其他描述」标题 + 描述1/2/3 正常（`H:/Videotransfer/m1.jpeg`）；信息弹窗内新样图正确（`H:/Videotransfer/i3.jpeg`）。
+- 手机 1256×2760：弹窗仍 86~88%，标题正常（`H:/Videotransfer/p2.jpeg`）。
+- 构建 `BUILD SUCCESSFUL in 54 s 535 ms`；平板 `192.168.3.124:42243` 与手机 `192.168.3.4:39391` 均 `install -r` 成功；版本号未动（`versionName "3.3"` / `versionCode 3500000`）。
+
+## 阶段 52：动效审查与三处整改（2026-11-01）✅ 完成
+
+### 52.1 需求（m08616 原意）
+
+用 `improve-animations` 技能审查全工程的动效代码，按结论本体动手优化，然后再做收尾（文档 + 汇报）。
+
+### 52.2 审计
+
+- 调用 `improve-animations`，走 Recon → 8 类打分 → 优先级表，产出写入新建的 `plans/`：
+
+  - `plans/README.md`：打分（动效价值 4 / 缺失动画 3 / 缓动与时长 4 / 物理性 4 / 可打断 4 / 性能 4 / 无障碍 2 / 一致性 3）、三条 finding（F1 HIGH 诗词页无 reduced-motion、F2 MEDIUM 面板常量两份且收起步长/尾巴裸数字、F3 LOW 结果三态硬切与计数硬跳）、四条 missed opportunities、以及「不做」清单（计数滚动动画、诗词页结构性重排）。
+  - `plans/001-reduced-motion-poetry.md` / `002-panel-collapse-tokens.md` / `003-result-state-transition.md`：三项整改的自包含实施计划。
+
+- 工程不是 git 仓库（`H:/projects/CulturalSearch` 无 `.git`），计划模板里的 `Commit` 字段以日期 `2026-11-01` 代替。
+
+### 52.3 做法
+
+**001 诗词页与共享结果卡接入 reduced-motion**
+
+- `pages/poetry/PoetrySearchPage.ets:11` 的 import 补 `isReducedMotion`；`onEnterTick()` 在方向判定之后、`enterShown = 0` 之前短路：`enterShown = ENTER_ALL_SHOWN`、`enterShownR = ENTER_ALL_SHOWN`、`rightEnter = 1`、`rightVeil = 0`，随后 return。
+- `components/ResultList.ets` 新增 `private cardTransition(): TransitionEffect`（reduced → 只 `OPACITY`；否则 `OPACITY.combine(translate({ y: 16 }))`），原 `:78-80` 的整段 transition 换成 `this.cardTransition().animation({ duration: MOTION_BASE_MS, curve: EASE_OUT_STRONG, delay: staggerDelay(idx) })`。组件三页共用，改一处即三页生效。
+
+**002 条件面板收起的步长与尾巴进令牌**
+
+- `common/Motion.ets` 在 `staggerDelay` 之后新增 `PANEL_COLLAPSE_STEP_MS = 26`、`PANEL_COLLAPSE_TAIL_MS = 150`。
+- `collapsePanel(onDone?)` 两页同改：每格延迟 `(PANEL_SLOTS - i) * PANEL_COLLAPSE_STEP_MS`；尾巴 `(PANEL_SLOTS - 1) * PANEL_COLLAPSE_STEP_MS + PANEL_COLLAPSE_TAIL_MS`。原 idiom 30 / mingzi 26 统一为 26（收起比展开的 `PANEL_STEP_MS = 30` 略快）。
+- 展开侧不动，本来就是 token 化的。
+
+**003 结果三态交叉淡入**
+
+- `pages/idiom/IdiomSearchPage.ets` 的 `@Builder ResultArea(rightSide: boolean)` 之前新增 `private stateTransition(): TransitionEffect`：reduced → `TransitionEffect.OPACITY`；否则 `OPACITY.combine(scale({ x: 0.98, y: 0.98 }))`（不用 `scale(0)`）。
+- 三分支根节点各追加 `.transition(this.stateTransition().animation({ duration: MOTION_BASE_MS, curve: EASE_OUT_STRONG }))`：空状态 `Column`（`.padding({ top: 40 })` 之后）、唯一结果 `Column`（`.alignItems(...)` 之后）、列表 `Column`（`.width('100%')` 之后）。卡片自身的错峰入场保持原样，两层叠加。
+
+### 52.4 坑
+
+1. **过渡要挂在分支根节点上**：三态切换时同一位置节点类型变化才有前后可比对；挂到分支内部子节点上会因节点重建而拿不到前态，等于没写。
+2. **reduced 短路必须在 `enterShown = 0` 之前**：先归零再 return 会让入场推进停在半途，闪一帧空白格。
+3. **两页收起步长不一致时取更快的那个**（26 而非 30）：收起本来就该比展开快，不需要为了统一去改观感更细的那页。
+4. **`snapshot_display` 单张 300~500ms**，抓不到 60/180ms 中间帧；逐帧验证只能录屏或把 sleep 压到 100ms 以下。
+
+### 52.5 验收
+
+- 平板 2800×1840 列表态：`click 210 403` → `text 4` → `keyEvent 2070` → `click 696 1019` → `H:/Videotransfer/r1.jpeg`（匹配结果 84），600ms 后 `r3.jpeg` 与 `r1.jpeg` sha256 相同（`cd732a3c…535a`）。
+- 平板空状态：`click 262 540`（清空所有）→ `e1.jpeg` 复位；`click 210 604` + `text zzz` + `2070` + `click 696 1019` → `e2.jpeg`「未找到该成语」。
+- 平板名士页：`click 1058 1714` → `click 600 343` → `click 1616 1154`（确定）→ `click 696 1481` → `p2.jpeg`（15 条）；`click 1216 358` 展开 → `p3.jpeg`。
+- 平板诗词页回归：`click 686 1700` → `v1.jpeg`。
+- 手机 1256×2760：`click 218 580` + `text 4` + `2070` + `click 628 1575` → `ph3.jpeg`（84 条，逐条错峰）。
+- 构建 `BUILD SUCCESSFUL in 17 s 617 ms`（HAP 1,984,906 B）；两端 `install -r` 均成功；版本号未动：`versionName "3.3"` / `versionCode 3500000`。
+
+### 52.6 文档
+
+- `docs/03-design-spec.md` 追加 §26。
+- 本文件（阶段 52）。
+- `dev-logs/2026-11-01.md` 追加「阶段 52」。
+- `plans/` 新增 README + 三份计划（审计留痕，不入发布包）。
+
 ## 依赖关系
 
 ```

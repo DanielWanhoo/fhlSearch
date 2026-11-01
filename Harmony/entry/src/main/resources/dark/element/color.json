@@ -87,6 +87,66 @@
     {
       "name": "scrim",
       "value": "#8C000000"
+    },
+    {
+      "name": "glow_primary",
+      "value": "#29C95A4A"
+    },
+    {
+      "name": "glow_primary_clear",
+      "value": "#00C95A4A"
+    },
+    {
+      "name": "glow_gold",
+      "value": "#14D9A65C"
+    },
+    {
+      "name": "glow_gold_clear",
+      "value": "#00D9A65C"
+    },
+    {
+      "name": "glow_ink",
+      "value": "#1F6B8FA8"
+    },
+    {
+      "name": "glow_ink_clear",
+      "value": "#006B8FA8"
+    },
+    {
+      "name": "cell_top",
+      "value": "#332B23"
+    },
+    {
+      "name": "cell_bottom",
+      "value": "#272019"
+    },
+    {
+      "name": "surface_sheen",
+      "value": "#14FFFFFF"
+    },
+    {
+      "name": "surface_sheen_clear",
+      "value": "#00FFFFFF"
+    },
+    {
+      "name": "focus_glow",
+      "value": "#59C95A4A"
+    },
+    {
+      "name": "panel_bg",
+      "value": "#B8262019"
+    },
+    {
+      "name": "veil_clear",
+      "value": "#001C1813"
+    },
+    {
+      "name": "panel_bg_clear",
+      "value": "#00262019"
+    },
+    {
+      "name": "card_bg_clear",
+      "value": "#00262019"
     }
   ]
 }

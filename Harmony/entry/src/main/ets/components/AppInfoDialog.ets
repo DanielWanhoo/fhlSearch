@@ -1,5 +1,6 @@
 import { bundleManager } from '@kit.AbilityKit'
 import { Haptics } from '../common/Haptics'
+import { LEVEL_GENTLE, MaterialUtil } from '../common/MaterialUtil'
 import { IDIOM_DB } from '../data/idiom_db'
 import { POETRY_DB } from '../data/poetry_db'
 import { MINGZI_DB } from '../data/mingzi_db'
@@ -19,6 +20,8 @@ import { MINGZI_DB } from '../data/mingzi_db'
 export struct AppInfoDialog {
   controller?: CustomDialogController
   @State version: string = '3.0.0'
+  // 当前「光感强度」档位（V3.3）：与 AppStorage 双向同步，点一下即改并持久化
+  @StorageProp('materialLevel') materialLevel: string = LEVEL_GENTLE
 
   aboutToAppear(): void {
     this.version = AppInfoDialog.readVersion()
@@ -129,7 +132,41 @@ export struct AppInfoDialog {
         .fontSize(12)
         .fontColor($r('app.color.text_secondary'))
         .width('100%')
-        .margin({ top: 2, bottom: 14 })
+        .margin({ top: 2, bottom: 12 })
+
+      // 光感强度三档（V3.3）：对应底栏玻璃材质的三个等级，切换后立刻重绘并记住选择
+      Row({ space: 8 }) {
+        Text('光感强度')
+          .fontSize(12)
+          .fontColor($r('app.color.text_secondary'))
+
+        ForEach(MaterialUtil.getLevelNames(), (name: string) => {
+          Row() {
+            Text(MaterialUtil.getLevelLabel(name))
+              .fontSize(12)
+              .fontWeight(this.materialLevel === name ? 600 : 400)
+              .fontColor(this.materialLevel === name ? $r('app.color.on_primary') : $r('app.color.text_secondary'))
+          }
+          .padding({ left: 12, right: 12, top: 5, bottom: 5 })
+          .borderRadius(999)
+          .backgroundColor(this.materialLevel === name ? $r('app.color.primary') : $r('app.color.glass_card_bg'))
+          .border({
+            width: 1,
+            color: this.materialLevel === name ? $r('app.color.primary') : $r('app.color.glass_card_edge'),
+            style: BorderStyle.Solid
+          })
+          .accessibilityText(`光感强度${MaterialUtil.getLevelLabel(name)}`)
+          .accessibilityDescription(this.materialLevel === name ? '当前选中' : '点击切换到这个档位')
+          .onClick(() => {
+            if (this.materialLevel !== name) {
+              Haptics.tick()
+              MaterialUtil.setLevelName(name)
+            }
+          })
+        }, (name: string) => name)
+      }
+      .width('100%')
+      .margin({ bottom: 12 })
 
       Scroll() {
         Column() {
@@ -148,6 +185,12 @@ export struct AppInfoDialog {
           this.Section('怎么切换模块', [
             '底部页签栏点「成语检索 / 诗词检索 / 名士检索」切换。',
             '手机上是单栏；平板横屏是左右双栏，中间的分隔条可以拖动调宽窄。'
+          ])
+
+          this.Section('外观与光感', [
+            '底栏是系统「沉浸光感」材质，会透出背后的内容并随窗口滚动变化。',
+            '上面那一行「光感强度」可以调它：精致最厚、均衡适中、柔和最薄；选完自动记住。',
+            '界面上方的浅色光晕是背景光衬，深浅色模式会各自适配。'
           ])
 
           this.Section('成语检索 · 山石雅集第14题', [
@@ -180,7 +223,7 @@ export struct AppInfoDialog {
             '· 拍照用的是系统相机，拍下的照片会存在系统相册里，可以自行删除。'
           ])
 
-          this.HelpImage($r('app.media.help_poetry_grid'), 1000 / 783,
+          this.HelpImage($r('app.media.help_poetry_grid'), 1256 / 927,
             '样图：这种 6×5 字格的图片都能识别（游戏截图、别人分享的截图都行）')
 
           this.Section('名士检索 · 众里寻他', [

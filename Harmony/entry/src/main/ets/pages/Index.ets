@@ -2,10 +2,23 @@ import { IdiomSearchPage } from './idiom/IdiomSearchPage'
 import { PoetrySearchPage } from './poetry/PoetrySearchPage'
 import { MingziSearchPage } from './mingzi/MingziSearchPage'
 import { SymbolGlyphModifier, window } from '@kit.ArkUI'
+import { accessibility } from '@kit.AccessibilityKit'
 import { hilog } from '@kit.PerformanceAnalysisKit'
 import { HdsAnimationMode, HdsTabs, HdsTabsController, HdsTabsFloatingStyle } from '@kit.UIDesignKit'
-import { MaterialUtil } from '../common/MaterialUtil'
+import { AmbientBackdrop } from '../common/AmbientBackdrop'
+import { MaterialUtil, LEVEL_GENTLE } from '../common/MaterialUtil'
 import { Haptics } from '../common/Haptics'
+
+// ── 切页过渡（v3.3）：背景不动，内容「自上而下错峰出现 + 横向回弹」 ──────────
+// 背景与环境光衬（AmbientBackdrop）铺在本页最底层，不参与切页动画 ——
+// 切页时背景一动都不动，动的只有页面内容（标题、图标、输入格、文字）。
+//
+// 内容分两层，互不干扰：
+// 1) 系统 HdsTabs 的横向平移（220ms，cubic-bezier(0.2, 0, 0.1, 1)）把整页带进来；
+// 2) 页面内部再按「从上到下」逐项进场：第 k 项等 k×50ms 再出现，横向从 +22vp 弹回原位，
+//    用欠阻尼弹簧（interpolatingSpring，阻尼比约 0.43）→ 越过原位约 4~5vp 再收住 = 左右回弹。
+// 具体实现落在三个检索页里（本页只负责「切到哪一页就把那一页的进场序号 +1」）。
+const ENTER_TICK_DEBOUNCE_MS: number = 80  // onContentWillChange 同一次切换会连发两次（实测间隔 3ms）
 
 interface DockTab {
   label: string
@@ -53,10 +66,22 @@ struct Index {
   @State poetryClearCmd: number = 0  // 诗词页「清空」指令（返回手势触发）
   @State mingziUndoCmd: number = 0   // 名士页「返回上一级检索」指令（返回手势触发）
   @StorageProp('bottomInset') @Watch('onBottomInsetChange') bottomInset: number = 0  // 系统导航条高度（vp），页签栏离底避让
+  // 光感强度档位（V3.3）：在「信息」弹窗里切换，持久化保存。
+  // 它只影响页签栏材质的等级（EXQUISITE / GENTLE / SMOOTH），变化时让下面的样式缓存失效重建。
+  @StorageProp('materialLevel') materialLevel: string = LEVEL_GENTLE
   private controller: HdsTabsController = new HdsTabsController()      // 竖屏：底部悬浮页签栏
   // 滚动回调提成字段：每帧都传给三个检索页，现造箭头函数会让子组件每次 build 都拿到“新参数”
   private scrollHandler: (y: number) => void = (y: number) => { this.onPageScroll(y) }
   private isBarHidden: boolean = false  // 页签栏是否已随滚动收起
+  // 切页进场序号（v3.3）：切到某一页就把它的序号 +1，该页据此重放「元素错峰进场」。
+  // 不能用 currentIndex 判断：HdsTabs 的 onChange 在切换**动画结束**时才回调，
+  // 动画期间 currentIndex 还是旧页，按它触发进场会把「正在滑出的旧页」重放一遍（已实测踩到）。
+  @State enterTickIdiom: number = 0
+  @State enterTickPoetry: number = 0
+  @State enterTickMingzi: number = 0
+  private lastEnterIndex: number = -1      // 上一次触发进场的页 + 时刻：用于压掉同一轮里的重复回调
+  private lastEnterAt: number = 0
+  private reduceMotion: boolean = false  // 系统「减弱动画」开关（无障碍），开启时不做过渡
   private readonly dockTabs: DockTab[] = [
     { label: '成语检索', symbol: $r('sys.symbol.book') },
     { label: '诗词检索', symbol: $r('sys.symbol.square_grid_2x2') },
@@ -67,6 +92,12 @@ struct Index {
   // 供本页页签栏离底避让与子页面标题「铺满到屏幕边缘」时避让系统栏图标。
   // 注意：EntryAbility 的 onWindowStageCreate 阶段窗口未就绪，getWindowAvoidArea 会返回 0。
   aboutToAppear(): void {
+    // 系统「减弱动画」（设置 → 无障碍）开启时，切页只保留系统自带的滑动，不再叠淡入
+    try {
+      this.reduceMotion = accessibility.isAnimationReduceEnabledSync()
+    } catch (err) {
+      this.reduceMotion = false
+    }
     // 先把当前占位高度发布给检索页（安全区读取是异步的，读到后再刷新一次）
     this.publishBarInset()
     window.getLastWindow(getContext(this)).then((win: window.Window) => {
@@ -139,6 +170,33 @@ struct Index {
     if (this.isBarHidden) {
       this.isBarHidden = false
       this.controller.applyShowAnimation(HdsAnimationMode.SCROLL_ANIMATION)
+    }
+  }
+
+  // 切页进场的「发令」：只是按方向增减进场页的序号，具体「元素自上而下错峰出现 + 横向回弹」
+  // 由各检索页自己做（页面里知道自己的元素顺序）。
+  // 系统「减弱动画」开启时整支不发令，切页只剩系统自带滑动。
+  private preparePageEnter(comingIndex: number): void {
+    if (this.reduceMotion) {
+      return
+    }
+    // onContentWillChange 对同一次切换会连发两次（实测间隔 3ms）：同一页的重复回调压掉，
+    // 否则刚藏好的元素会被第二道令重新藏一次、动画从头开始
+    const now: number = Date.now()
+    if (comingIndex === this.lastEnterIndex && now - this.lastEnterAt < ENTER_TICK_DEBOUNCE_MS) {
+      return
+    }
+    this.lastEnterIndex = comingIndex
+    this.lastEnterAt = now
+    // 序号按「切页方向」加减，而不是一律 +1：页面据序号的变化判断从左侧还是右侧弹入。
+    // 此刻 currentIndex 还是旧页（动画没结束），正好拿来比大小。
+    const dir: number = comingIndex < this.currentIndex ? -1 : 1
+    if (comingIndex === 0) {
+      this.enterTickIdiom += dir
+    } else if (comingIndex === 1) {
+      this.enterTickPoetry += dir
+    } else if (comingIndex === 2) {
+      this.enterTickMingzi += dir
     }
   }
 
@@ -221,7 +279,9 @@ struct Index {
   private barStyleKey: string = ''
 
   private floatingStyle(): HdsTabsFloatingStyle {
-    const key: string = `${this.isWide}|${this.bottomInset}|${Math.round(this.windowWidth)}|${this.splitRatio.toFixed(3)}`
+    // 缓存键里带上「光感强度」：档位一变就重建材质参数，页签栏立刻按新等级重新渲染
+    const key: string =
+      `${this.isWide}|${this.bottomInset}|${Math.round(this.windowWidth)}|${this.splitRatio.toFixed(3)}|${this.materialLevel}`
     if (this.barStyleKey !== key) {
       this.barStyleKey = key
       this.barStyle = this.buildFloatingStyle()
@@ -266,7 +326,7 @@ struct Index {
         // 宽屏：外层铺满「页签栏布局盒」，内层固定窗口宽 + 右移补回屏幕坐标（见 barBoxWidth 注释）
         Column() {
           Column() {
-            IdiomSearchPage({ undoCmd: this.idiomUndoCmd, onScrollOffset: this.scrollHandler })
+            IdiomSearchPage({ undoCmd: this.idiomUndoCmd, onScrollOffset: this.scrollHandler, enterTick: this.enterTickIdiom })
           }
           .width(this.contentWidth())
           .height('100%')
@@ -277,7 +337,7 @@ struct Index {
         .alignItems(HorizontalAlign.Start)
       } else {
         // 手机：整屏即窗口，直接放页面
-        IdiomSearchPage({ undoCmd: this.idiomUndoCmd, onScrollOffset: this.scrollHandler })
+        IdiomSearchPage({ undoCmd: this.idiomUndoCmd, onScrollOffset: this.scrollHandler, enterTick: this.enterTickIdiom })
       }
     }
     .tabBar(this.tabBarStyle(0))
@@ -286,7 +346,7 @@ struct Index {
       if (this.isWide) {
         Column() {
           Column() {
-            PoetrySearchPage({ clearCmd: this.poetryClearCmd, onScrollOffset: this.scrollHandler })
+            PoetrySearchPage({ clearCmd: this.poetryClearCmd, onScrollOffset: this.scrollHandler, enterTick: this.enterTickPoetry })
           }
           .width(this.contentWidth())
           .height('100%')
@@ -296,7 +356,7 @@ struct Index {
         .height('100%')
         .alignItems(HorizontalAlign.Start)
       } else {
-        PoetrySearchPage({ clearCmd: this.poetryClearCmd, onScrollOffset: this.scrollHandler })
+        PoetrySearchPage({ clearCmd: this.poetryClearCmd, onScrollOffset: this.scrollHandler, enterTick: this.enterTickPoetry })
       }
     }
     .tabBar(this.tabBarStyle(1))
@@ -305,7 +365,7 @@ struct Index {
       if (this.isWide) {
         Column() {
           Column() {
-            MingziSearchPage({ undoCmd: this.mingziUndoCmd, onScrollOffset: this.scrollHandler })
+            MingziSearchPage({ undoCmd: this.mingziUndoCmd, onScrollOffset: this.scrollHandler, enterTick: this.enterTickMingzi })
           }
           .width(this.contentWidth())
           .height('100%')
@@ -315,7 +375,7 @@ struct Index {
         .height('100%')
         .alignItems(HorizontalAlign.Start)
       } else {
-        MingziSearchPage({ undoCmd: this.mingziUndoCmd, onScrollOffset: this.scrollHandler })
+        MingziSearchPage({ undoCmd: this.mingziUndoCmd, onScrollOffset: this.scrollHandler, enterTick: this.enterTickMingzi })
       }
     }
     .tabBar(this.tabBarStyle(2))
@@ -323,70 +383,71 @@ struct Index {
 
 
   build() {
-    Column() {
-      // 手机竖屏 / 平板横屏统一使用底部悬浮页签栏（HDS 沉浸光感材质）
-      // 内容铺满整屏：检索内容一直滚到页签栏上方，其余部分从玻璃材质下方穿过
-      HdsTabs({ barPosition: BarPosition.End, index: this.currentIndex, controller: this.controller }) {
-        this.TabsContent()
+    // 背景 + 环境光衬铺在最底层、**不参与切页动画**：
+    // 三个检索页只画内容，所以切页时背景纹丝不动（早先每页各带一份底衬，切页会整块推走）。
+    Stack() {
+      AmbientBackdrop()
+
+      Column() {
+        // 手机竖屏 / 平板横屏统一使用底部悬浮页签栏（HDS 沉浸光感材质）
+        // 内容铺满整屏：检索内容一直滚到页签栏上方，其余部分从玻璃材质下方穿过
+        HdsTabs({ barPosition: BarPosition.End, index: this.currentIndex, controller: this.controller }) {
+          this.TabsContent()
+        }
+        .barOverlap(true)
+        // ⚠️ 自带的「左右滑动切页」关掉：
+        // 它的拖动过渡会把整页做成带透视的斜切/缩放，慢拖时画面又歪又抖 —— 这就是用户反馈的「一顿一顿」。
+        // 用户后来要求只保留点页签栏切换，所以连自己的横向手势也一并去掉了。
+        .scrollable(false)
+        // 切页滑动时长：手机 220（系统只负责横向滑入，进场由各页错峰演出）；
+        // ⚠️ 平板双栏设为 0：整页横向滑动会把中间的分栏线一起推走，而分栏线必须原地不动 ——
+        // 关掉之后两栏各自在原地「长出来」（左栏逐项错峰、右栏整块淡进），互不牵连
+        .animationDuration(this.isWide ? 0 : 220)
+        .barBackgroundColor(Color.Transparent)
+        .barFloatingStyle(this.floatingStyle())
+        // 平板：布局盒整体加宽并左移，让盒中心 = 左栏中心（页签栏随之居中于左栏）；
+        // 盒右边缘仍 = 屏幕右边缘，故内容不会被裁（见 barBoxWidth 注释）；窄屏两项分别退化为 100% / 0
+        .width(this.barBoxWidth())
+        .height('100%')
+        .margin({ left: this.barBoxOffset() })
+        .clip(false)
+        // 切页过渡：新页面**即将显示**时先把它压到「淡入起点 + 下移 16vp」，
+        // 下一帧再用弹簧曲线拉起。放在 willChange 而不是 onChange，是为了让第一帧就已经是起点，
+        // 不会先满不透明度闪一下。返回 true = 允许切换。
+        .onContentWillChange((currentIndex: number, comingIndex: number) => {
+          if (comingIndex !== currentIndex) {
+            this.preparePageEnter(comingIndex)
+          }
+          return true
+        })
+        .onChange((index: number) => {
+          // 仅同步 currentIndex（点页签栏切换后由 Tabs 回传）
+          this.currentIndex = index
+        })
+        // 切页只走页签栏：左右滑动切页已按用户要求移除（滑动易误触，且与平板左右两栏的拖拽冲突）
       }
-      .barOverlap(true)
-      // ⚠️ 自带的「左右滑动切页」关掉（原因见下面的 PanGesture）：
-      // 它的拖动过渡会把整页做成带透视的斜切/缩放，慢拖时画面又歪又抖 —— 这就是用户反馈的「一顿一顿」。
-      // 现在改为「自己的横向手势 → 改 currentIndex」，走的是点页签那条干净的横向滑动过渡。
-      .scrollable(false)
-      .animationDuration(220)   // 切页滑动时长：300 → 220，缩短「整页在动」的高开销窗口
-      .barBackgroundColor(Color.Transparent)
-      .barFloatingStyle(this.floatingStyle())
-      // 平板：布局盒整体加宽并左移，让盒中心 = 左栏中心（页签栏随之居中于左栏）；
-      // 盒右边缘仍 = 屏幕右边缘，故内容不会被裁（见 barBoxWidth 注释）；窄屏两项分别退化为 100% / 0
-      .width(this.barBoxWidth())
+      .width('100%')
       .height('100%')
-      .margin({ left: this.barBoxOffset() })
-      .clip(false)
-      .onChange((index: number) => {
-        // 仅同步 currentIndex（点页签栏、或下面的手势改 currentIndex 都会走到这里）
-        this.currentIndex = index
+      .alignItems(HorizontalAlign.Start)
+      .onAreaChange((oldArea: Area, newArea: Area) => {
+        const w: number = newArea.width as number
+        if (Math.abs(w - this.windowWidth) < 0.5) {
+          return   // 面积没真变（切页签、弹出层都会触发一次）：直接返回，别让整页重算
+        }
+        this.windowWidth = w
+        // 发布给三个检索页：它们首次显示时先拿到真实宽度，就不用「先按 0 排一遍再重排一遍」
+        AppStorage.setOrCreate<number>('winWidth', w)
+        const wide: boolean = this.windowWidth > 600
+        if (wide && !this.isWide) {
+          // 竖屏（会随滚动收起）切到平板双栏（常驻）→ 立刻把页签栏浮出来
+          this.isWide = wide
+          this.showBarIfHidden()
+        } else {
+          this.isWide = wide
+        }
       })
-      // 手机上的「左右滑动切页」：只认横向、够 60vp 才切，切页走点页签那套干净过渡。
-      // 平板不加（左右两栏 + 分栏分隔条，滑动容易误触）。
-      .gesture(
-        PanGesture({ direction: PanDirection.Horizontal, distance: 30 })
-          .onActionEnd((event: GestureEvent) => {
-            if (this.isWide) {
-              return
-            }
-            const dx: number = event.offsetX
-            if (Math.abs(dx) < 60) {
-              return
-            }
-            const next: number = dx < 0 ? this.currentIndex + 1 : this.currentIndex - 1
-            if (next >= 0 && next < this.dockTabs.length && next !== this.currentIndex) {
-              Haptics.tick()
-              this.currentIndex = next
-            }
-          })
-      )
     }
     .width('100%')
     .height('100%')
-    .alignItems(HorizontalAlign.Start)
-    .backgroundColor($r('app.color.background'))
-    .onAreaChange((oldArea: Area, newArea: Area) => {
-      const w: number = newArea.width as number
-      if (Math.abs(w - this.windowWidth) < 0.5) {
-        return   // 面积没真变（切页签、弹出层都会触发一次）：直接返回，别让整页重算
-      }
-      this.windowWidth = w
-      // 发布给三个检索页：它们首次显示时先拿到真实宽度，就不用「先按 0 排一遍再重排一遍」
-      AppStorage.setOrCreate<number>('winWidth', w)
-      const wide: boolean = this.windowWidth > 600
-      if (wide && !this.isWide) {
-        // 竖屏（会随滚动收起）切到平板双栏（常驻）→ 立刻把页签栏浮出来
-        this.isWide = wide
-        this.showBarIfHidden()
-      } else {
-        this.isWide = wide
-      }
-    })
   }
 }

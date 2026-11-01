@@ -1,12 +1,17 @@
 import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
+import { LEVEL_GENTLE, LEVEL_STORAGE_KEY } from '../common/MaterialUtil';
 
 const DOMAIN = 0x0000;
 
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onCreate');
+
+    // v3.3「光感强度」持久化：精致 / 均衡 / 柔和，默认「均衡」。
+    // 用 PersistentStorage 落盘，重启应用后保持上次选择；页签栏材质与玻璃层次按该档位渲染。
+    PersistentStorage.persistProp(LEVEL_STORAGE_KEY, LEVEL_GENTLE);
   }
 
   onDestroy(): void {

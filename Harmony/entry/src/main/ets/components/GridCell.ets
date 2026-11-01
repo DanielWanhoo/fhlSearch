@@ -79,15 +79,17 @@ export struct GridCell {
         .width('100%')
         .height('100%')
         .maxLength(1)
-        .fontSize(18)
-        .fontWeight(500)
+        .fontSize(19)
+        .fontWeight(600)
         .fontColor($r('app.color.text_primary'))
         .textAlign(TextAlign.Center)
         .type(InputType.Normal)
-        .backgroundColor(this.cell.isMatched ? $r('app.color.match_highlight_bg') : $r('app.color.cell_bg'))
-        .borderRadius(8)
+        // 底色由外层 Column 的渐变负责（v3.3），输入框自己只在「命中」时盖上绿色；
+        // 未命中时保持透明，才透得出下面那层 cell_top → cell_bottom 的浅玻璃渐变
+        .backgroundColor(this.cell.isMatched ? $r('app.color.match_highlight_bg') : Color.Transparent)
+        .borderRadius(14)
         .border({
-          width: this.cell.isMatched ? 3 : this.isFocused ? 2 : 1.5,
+          width: this.cell.isMatched ? 2 : this.isFocused ? 2 : 1,
           color: this.cell.isMatched ? $r('app.color.match_highlight') : this.isFocused ? $r('app.color.primary') : $r('app.color.cell_border'),
           style: BorderStyle.Solid
         })
@@ -140,5 +142,15 @@ export struct GridCell {
     }
     .width('100%')
     .height('100%')
+    // 格的底（v3.3）：极淡的上下渐变，让 30 个格子像一块块微微凸起的浅玻璃片；
+    // 命中态的绿色由上面输入框的不透明底色覆盖
+    .linearGradient({
+      angle: 180,
+      colors: [
+        [$r('app.color.cell_top'), 0.0],
+        [$r('app.color.cell_bottom'), 1.0]
+      ]
+    })
+    .borderRadius(14)
   }
 }

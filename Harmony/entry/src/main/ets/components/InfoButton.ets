@@ -1,4 +1,5 @@
 import { Haptics } from '../common/Haptics'
+import { EASE_OUT_STRONG, MOTION_FAST_MS } from '../common/Motion'
 import { AppInfoDialog } from './AppInfoDialog'
 
 /**
@@ -9,7 +10,7 @@ import { AppInfoDialog } from './AppInfoDialog'
  * 配色用「卡片上的玻璃」（glass_card_bg / glass_card_edge）：页面底色与卡片都偏浅，
  * 白玻璃叠上去几乎看不见，故浅色主题改用暖墨半透明。
  *
- * 交互：按下 120ms 收缩到 0.9 + 一下轻触震动，抬起弹簧回弹；点击打开「信息」对话框。
+ * 交互：按下 110ms 收缩到 0.94 + 一下轻触震动，抬起弹簧回弹；点击打开「信息」对话框。
  * 用法：在页面 Header 的标题行右侧放 `InfoButton()` 即可。
  */
 @Component
@@ -37,8 +38,8 @@ export struct InfoButton {
       adaptiveColor: AdaptiveColor.AVERAGE
     })
     .border({ width: 1, color: $r('app.color.glass_card_edge'), style: BorderStyle.Solid })
-    .scale({ x: this.pressed ? 0.9 : 1, y: this.pressed ? 0.9 : 1 })
-    .animation({ duration: 120, curve: Curve.FastOutSlowIn })
+    .scale({ x: this.pressed ? 0.94 : 1, y: this.pressed ? 0.94 : 1 })
+    .animation({ duration: MOTION_FAST_MS, curve: EASE_OUT_STRONG })
     .accessibilityText('信息')
     .accessibilityDescription('查看应用信息与使用方法')
     .onTouch((event: TouchEvent) => {

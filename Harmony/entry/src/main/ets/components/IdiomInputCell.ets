@@ -1,4 +1,5 @@
 import { KeyCode } from '@kit.InputKit'
+import { EASE_OUT_STRONG, MOTION_BASE_MS } from '../common/Motion'
 import { IdiomSearchMode } from '../service/IdiomSearchService'
 import { isValidHanzi } from './GridCell'
 
@@ -66,23 +67,41 @@ export struct IdiomInputCell {
   build() {
     TextInput({ text: this.value, placeholder: this.placeholder() })
       .width('100%')
-      .height(52)
+      .height(56)
       .maxLength(this.mode === IdiomSearchMode.PINYIN ? 8 : 1)
       .type(this.mode === IdiomSearchMode.TONE ? InputType.Number : InputType.Normal)
-      .fontSize(18)
-      .fontWeight(500)
+      .fontSize(19)
+      .fontWeight(600)
       .fontColor($r('app.color.text_primary'))
       .placeholderColor($r('app.color.text_secondary'))
       .textAlign(TextAlign.Center)
-      .backgroundColor($r('app.color.cell_bg'))
-      .borderRadius(8)
-      .border({
-        width: this.isFocused ? 2 : 1.5,
-        color: this.isFocused ? $r('app.color.primary') : $r('app.color.cell_border'),
-        style: BorderStyle.Solid
+      // 格的底（v3.3）：自上而下由亮到暗的极淡渐变（cell_top → cell_bottom），
+      // 让每一格像一块微微凸起的浅色玻璃片；聚焦时再叠主色描边与外发光
+      .linearGradient({
+        angle: 180,
+        colors: [
+          [$r('app.color.cell_top'), 0.0],
+          [$r('app.color.cell_bottom'), 1.0]
+        ]
+      })
+      .borderRadius(14)
+      // 边框宽度**保持 1vp 不变**（改宽度会让每次点格子都触发一次布局），
+      // 聚焦的那圈主色改由 outline 画在盒子外面：只重绘、不动布局
+      .border({ width: 1, color: $r('app.color.cell_border'), style: BorderStyle.Solid })
+      .outline({
+        width: this.isFocused ? 2 : 0,
+        color: $r('app.color.primary'),
+        radius: 14,
+        style: OutlineStyle.SOLID
+      })
+      .shadow({
+        radius: this.isFocused ? 14 : 0,
+        color: $r('app.color.focus_glow'),
+        offsetX: 0,
+        offsetY: 0
       })
       .caretColor($r('app.color.primary'))
-      .animation({ duration: 150, curve: Curve.EaseOut })
+      .animation({ duration: MOTION_BASE_MS, curve: EASE_OUT_STRONG })
       .onFocus(() => {
         this.isFocused = true
       })

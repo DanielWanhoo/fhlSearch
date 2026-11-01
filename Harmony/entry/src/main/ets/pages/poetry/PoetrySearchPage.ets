@@ -8,6 +8,8 @@ import { SearchEngine } from '../../engine/SearchEngine'
 import { POETRY_DB } from '../../data/poetry_db'
 import { InfoButton } from '../../components/InfoButton'
 import { Haptics } from '../../common/Haptics'
+import { EASE_OUT_STRONG, MOTION_BASE_MS, MOTION_FAST_MS, MOTION_SLOW_MS, STAGGER_STEP_MS, isReducedMotion } from '../../common/Motion'
+import { ENTER_ALL_SHOWN, ENTER_OFFSET_X, ENTER_SPRING, ENTER_START_DELAY_MS, RIGHT_ENTER_MS, RIGHT_OFFSET_X, RIGHT_VEIL_MS, enterFinishMs, enterStepFor } from '../../common/PageEnter'
 import {
   CropRect, GRID_ASPECT, OcrOutcome, describeError, detectGridRect, imageSize,
   isOcrSupported, pickFromCamera, pickFromGallery, recognizeCropped
@@ -37,6 +39,22 @@ export struct PoetrySearchPage {
   @StorageProp('barInset') barInset: number = 0  // 悬浮页签栏占位高度（vp，Index 发布）：滚动内容底部留白，内容可从玻璃下方穿过
   @Prop @Watch('onClearCmd') clearCmd: number = 0  // 系统返回手势指令：变化时执行「清空」
   onScrollOffset?: (yOffset: number) => void  // 滚动回调：Index 据此驱动悬浮页签栏下滚隐藏 / 上滚显示
+  // ── 切页进场（v3.3）：元素自上而下每 50ms 放出一项，横向弹入 ──────────────
+  @Prop @Watch('onEnterTick') enterTick: number = 0
+  @State enterShown: number = ENTER_ALL_SHOWN  // 已放出的项数；0 = 全部藏起来，ENTER_ALL_SHOWN = 静止态
+  @State enterDir: number = 1  // 进场方向：+1 从右侧弹入，-1 从左侧弹入（跟随切页方向）
+  private lastEnterTick: number = 0  // 上一次收到的 enterTick：靠它的大小变化判断切页方向
+  private enterTimers: number[] = []
+  // 槽位数：0 标题 / 1 字格 / 2 按键 / 3 识别用图预览 / 4 结果
+  private readonly ENTER_SLOTS: number = 5
+  // 平板双栏时右栏（结果区）自己一组错峰：与左栏同时起步，标题 + 前 5 张卡片逐项放出
+  @State enterShownR: number = ENTER_ALL_SHOWN
+  // 平板右栏「整块」进场：1 = 静止，0 = 藏在起始位移上（不再逐项弹出）
+  @State rightEnter: number = 1
+  // 平板右栏背景的横向渐隐遮罩：1 = 整个盖住，0 = 已经扫开（只在切页那一下出现）
+  @State rightVeil: number = 0
+  private enterTimersR: number[] = []
+  private readonly RIGHT_SLOTS: number = 6
   private engine: SearchEngine = new SearchEngine(POETRY_DB)
   private highlightToken: number = 0  // 高亮批次令牌：清空表格后旧批次的延迟高亮自动作废
   // ---- 识图填字（v3.0）----
@@ -66,6 +84,11 @@ export struct PoetrySearchPage {
   aboutToAppear(): void {
     this.initGrid()
     this.seedWidth()
+    // 本页往往是在「切到这一页」的那一刻才被创建（HdsTabs 懒创建）：
+    // 初始赋值不会触发 @Watch，所以要在这里补放一次进场，否则第一次切进来没有错峰动画
+    if (this.enterTick !== 0) {
+      this.onEnterTick()
+    }
   }
 
   /**
@@ -135,13 +158,13 @@ export struct PoetrySearchPage {
         if (pos.row >= 0 && pos.row < 5 && pos.col >= 0 && pos.col < 6) {
           const r = pos.row
           const c = pos.col
-          const delay = order * 45
+          const delay = order * STAGGER_STEP_MS
           order++
           setTimeout(() => {
             if (token !== this.highlightToken) {
               return
             }
-            animateTo({ duration: 180, curve: Curve.EaseOut }, () => {
+            animateTo({ duration: MOTION_BASE_MS, curve: EASE_OUT_STRONG }, () => {
               this.gridData[r][c].isMatched = true
             })
           }, delay)
@@ -150,7 +173,7 @@ export struct PoetrySearchPage {
     }
 
     // 更新结果：卡片错峰淡入上滑（见 ResultList 中各卡片的 transition）
-    animateTo({ duration: 250, curve: Curve.EaseOut }, () => {
+    animateTo({ duration: MOTION_SLOW_MS, curve: EASE_OUT_STRONG }, () => {
       this.results = matchResults
       this.hasSearched = true
     })
@@ -547,15 +570,16 @@ export struct PoetrySearchPage {
 
   // ==================== 可复用 UI 片段 ====================
 
+  // 大标题区（v3.3 空间化排版）：标题放大加粗、副标题与标题之间留一点呼吸
   @Builder
   Header() {
     Row() {
       Column() {
         Text('山石雅集第15题')
-          .fontSize(24)
-          .fontWeight(600)
+          .fontSize(26)
+          .fontWeight(700)
           .fontColor($r('app.color.text_primary'))
-          .margin({ bottom: 4 })
+          .margin({ bottom: 6 })
 
         // 副标题平时是操作提示；识图填字后换成识别结果小注（清空时复位）
         Text(this.ocrNote.length > 0 ? this.ocrNote : '在表格中填入汉字，检索蕴含的诗词句')
@@ -571,6 +595,8 @@ export struct PoetrySearchPage {
     .width('100%')
     .alignItems(VerticalAlign.Center)
     .margin({ bottom: 32 })
+    .opacity(this.enterOpacity(0))
+    .translate({ x: this.enterShift(0) })
   }
 
   @Builder
@@ -612,6 +638,8 @@ export struct PoetrySearchPage {
     .width('100%')
     .justifyContent(FlexAlign.Center)
     .margin({ top: 4 })
+    .opacity(this.enterOpacity(2))
+    .translate({ x: this.enterShift(2) })
   }
 
   /**
@@ -773,7 +801,9 @@ export struct PoetrySearchPage {
       }
       .width('100%')
       .margin({ top: 12 })
-      .transition(TransitionEffect.OPACITY.animation({ duration: 180 }))
+      .opacity(this.enterOpacity(3))
+      .translate({ x: this.enterShift(3) })
+      .transition(TransitionEffect.OPACITY.animation({ duration: MOTION_BASE_MS, curve: EASE_OUT_STRONG }))
     }
   }
 
@@ -972,10 +1002,115 @@ export struct PoetrySearchPage {
     .shadow({ radius: 24, color: $r('app.color.card_shadow'), offsetX: 0, offsetY: 8 })
   }
 
+  // ==================== 切页进场（v3.3） ====================
+
+  private clearEnterTimers(): void {
+    for (const t of this.enterTimers) {
+      clearTimeout(t)
+    }
+    this.enterTimers = []
+    for (const t of this.enterTimersR) {
+      clearTimeout(t)
+    }
+    this.enterTimersR = []
+  }
+
+  /** 第 slot 项是否已经放出：用下标比较，逐项自增，后一道令不会重写前一项的终值 */
+  private enterShownAt(slot: number): boolean {
+    return this.enterShown > slot
+  }
+
+  private enterOpacity(slot: number): number {
+    return this.enterShownAt(slot) ? 1 : 0
+  }
+
+  /** 起始横向偏移（vp）：正数 = 从右侧弹回来 */
+  private enterShift(slot: number): number {
+    return this.enterShownAt(slot) ? 0 : ENTER_OFFSET_X * this.enterDir
+  }
+
+  /** 右栏第 slot 项是否已放出；超出项数的按最后一项算，免得末尾忽然整片弹出 */
+  private enterShownRAt(slot: number): boolean {
+    return this.enterShownR > Math.min(slot, this.RIGHT_SLOTS - 1)
+  }
+
+  private enterROpacity(slot: number): number {
+    return this.enterShownRAt(slot) ? 1 : 0
+  }
+
+  private enterRShift(slot: number): number {
+    return this.enterShownRAt(slot) ? 0 : ENTER_OFFSET_X * this.enterDir
+  }
+
+  /**
+   * 右栏背景遮罩的横向渐变：不透明的一端放在「进场来的那一侧」，
+   * 淡出时就像从那一侧向另一侧扫开（方向与左栏的横向位移一致）
+   */
+  private rightVeilColors(): Array<[ResourceColor, number]> {
+    return this.enterDir > 0
+      // 往右切页（enterDir +1）：左半边先盖着、右半边先露出来 —— 揭开的方向也是从右往左
+      ? [[$r('app.color.background'), 0], [$r('app.color.veil_clear'), 1]]
+      : [[$r('app.color.veil_clear'), 0], [$r('app.color.background'), 1]]
+  }
+
+  /**
+   * 收到外壳的进场指令：先无动画藏起全部元素，再每 50ms 放出一项
+   *
+   * 一项一条 animateTo：动画参数不能攒在一条里分批触发；
+   * 每道令改的又是不同的下标（enterShown = i + 1），所以不会互相覆盖。
+   */
+  onEnterTick(): void {
+    this.clearEnterTimers()
+    // 方向看序号是变大还是变小：往后切页（序号变大）从右侧弹入，往前切页从左侧弹入，
+    // 与系统横向平移的方向一致，元素不会逆着页面滑动的方向进场
+    this.enterDir = this.enterTick > this.lastEnterTick ? 1 : -1
+    this.lastEnterTick = this.enterTick
+    // 减弱动效：一步到位，不放错峰、不横扫（位移类进场整支跳过）
+    if (isReducedMotion()) {
+      this.enterShown = ENTER_ALL_SHOWN
+      this.enterShownR = ENTER_ALL_SHOWN
+      this.rightEnter = 1
+      this.rightVeil = 0
+      return
+    }
+    this.enterShown = 0
+    this.enterShownR = 0
+    const step: number = enterStepFor(this.ENTER_SLOTS)
+    for (let i = 0; i < this.ENTER_SLOTS; i++) {
+      this.enterTimers.push(setTimeout(() => {
+        this.getUIContext().animateTo({ curve: ENTER_SPRING }, () => {
+          this.enterShown = i + 1
+        })
+      }, ENTER_START_DELAY_MS + i * step))
+    }
+    this.enterTimers.push(setTimeout(() => {
+      this.enterShown = ENTER_ALL_SHOWN
+    }, enterFinishMs(this.ENTER_SLOTS)))
+    // 平板右栏：**整块**进场，不再逐项 —— 与左栏同一时刻起步、同一方向；
+    // 底下再压一层横向渐隐的底色，扫过去之后才露出内容（「左右淡进淡出」）
+    this.enterShownR = ENTER_ALL_SHOWN
+    if (this.windowWidth > 600) {
+      this.rightEnter = 0
+      this.rightVeil = 1
+      this.enterTimersR.push(setTimeout(() => {
+        this.getUIContext().animateTo({ duration: RIGHT_ENTER_MS, curve: EASE_OUT_STRONG }, () => {
+          this.rightEnter = 1
+        })
+      }, ENTER_START_DELAY_MS))
+      this.enterTimersR.push(setTimeout(() => {
+        this.getUIContext().animateTo({ duration: RIGHT_VEIL_MS, curve: EASE_OUT_STRONG }, () => {
+          this.rightVeil = 0
+        })
+      }, ENTER_START_DELAY_MS + 40))
+    }
+  }
+
   // ==================== UI 构建 ====================
 
   build() {
     // 根节点用 Stack：正常内容是里层 Column，识别中在最上层压一层蒙层
+    // v3.3：背景与环境光衬由外壳 Index.ets 铺在页签容器最底层、**不参与切页动画**；
+    // 本页只画内容，整层透明，切页时背景不动、只有内容在动。
     Stack({ alignContent: Alignment.Center }) {
       Column() {
         if (this.windowWidth === 0 || this.windowWidth <= 600) {
@@ -983,6 +1118,8 @@ export struct PoetrySearchPage {
           Column() {
             this.Header()
             PoetryGrid({ gridData: $gridData, onPasteText: (t: string) => { this.fillFromPaste(t) } })
+              .opacity(this.enterOpacity(1))
+              .translate({ x: this.enterShift(1) })
             this.ActionButtons()
             this.OcrPreview()
 
@@ -994,6 +1131,8 @@ export struct PoetrySearchPage {
                 // 底部留白 = 悬浮页签栏高度：结果列表能一直滚到页签栏上方
                 Column() {
                   ResultList({ results: $results })
+                    .opacity(this.enterOpacity(4))
+                    .translate({ x: this.enterShift(4) })
                 }
                 .width('100%')
                 .padding({ bottom: this.barInset })
@@ -1021,6 +1160,8 @@ export struct PoetrySearchPage {
                 Column() {
                   this.Header()
                   PoetryGrid({ gridData: $gridData, onPasteText: (t: string) => { this.fillFromPaste(t) } })
+              .opacity(this.enterOpacity(1))
+              .translate({ x: this.enterShift(1) })
                   this.ActionButtons()
                   this.OcrPreview()
                 }
@@ -1055,12 +1196,23 @@ export struct PoetrySearchPage {
             })
 
             // 右栏：结果区
+            // 平板切页时右栏**整块**淡进（不再逐项），底下压一层横向渐隐的底色随之扫开；
+            // 左栏仍然是逐项错峰 —— 两栏各自在自己的地里长出来，中间分栏线不动
             Column() {
+              Stack({ alignContent: Alignment.TopStart }) {
+                Column() {
+
               if (this.hasSearched || this.results.length > 0) {
                 Scroll() {
                   // 底部留白 = 悬浮页签栏高度：结果列表能一直滚到页签栏上方
                   Column() {
-                    ResultList({ results: $results })
+                    // 右栏结果区自己逐项错峰（标题 = 第 0 项，卡片依次往后），容器不再整块淡入
+                    ResultList({
+                      results: $results,
+                      enterShown: ENTER_ALL_SHOWN,
+                      enterSlots: this.RIGHT_SLOTS,
+                      enterDir: this.enterDir
+                    })
                   }
                   .width('100%')
                   .padding({ bottom: this.barInset })
@@ -1091,6 +1243,22 @@ export struct PoetrySearchPage {
                 // 空状态提示同样抬高到悬浮页签栏之上，避免贴到屏幕底边被裁切
                 .padding({ bottom: this.barInset })
               }
+                }
+                .width('100%')
+                .height('100%')
+                .opacity(this.rightEnter)
+                .translate({ x: RIGHT_OFFSET_X * this.enterDir * (1 - this.rightEnter) })
+
+                // 背景横隐遮罩：只在切页那一下盖住，随后从一侧扫开；不参与点击
+                Column()
+                  .width('100%')
+                  .height('100%')
+                  .linearGradient({ angle: 90, colors: this.rightVeilColors() })
+                  .opacity(this.rightVeil)
+                  .hitTestBehavior(HitTestMode.None)
+              }
+              .width('100%')
+              .height('100%')
             }
             .layoutWeight(1 - this.splitRatio)
             .height('100%')
@@ -1102,7 +1270,6 @@ export struct PoetrySearchPage {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor($r('app.color.background'))
       .onKeyEvent((event: KeyEvent) => {
         if (event.type !== KeyType.Down) {
           return false
@@ -1160,7 +1327,7 @@ export struct PoetrySearchPage {
         .width('100%')
         .height('100%')
         .backgroundColor($r('app.color.scrim'))
-        .transition(TransitionEffect.OPACITY.animation({ duration: 160 }))
+        .transition(TransitionEffect.OPACITY.animation({ duration: MOTION_FAST_MS, curve: EASE_OUT_STRONG }))
       }
 
       // 裁剪面板：暗底 + 居中卡片（手机铺满宽度、平板限宽居中）
@@ -1187,7 +1354,7 @@ export struct PoetrySearchPage {
           bottom: this.barInset + 8
         })
         .backgroundColor($r('app.color.scrim'))
-        .transition(TransitionEffect.OPACITY.animation({ duration: 160 }))
+        .transition(TransitionEffect.OPACITY.animation({ duration: MOTION_FAST_MS, curve: EASE_OUT_STRONG }))
       }
     }
     .width('100%')

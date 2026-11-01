@@ -138,6 +138,16 @@ export class IdiomSearchService {
   }
 
   /**
+   * 预演一次检索：只数命中条数，**不落栈、不改候选集**
+   *
+   * 首次检索的退场要先知道「检索键该分裂成两键还是三键」（命中 ≥ 2 条才有二次检索），
+   * 但结果本身要等退场演完才亮出来，所以这里单独给一个只读的计数。
+   */
+  preview(query: IdiomQuery): number {
+    return this.current.filter((item: IdiomItem) => this.matches(item, query)).length
+  }
+
+  /**
    * 清空当前检索：弹栈，回到上一级候选集。
    * @returns 回退后的候选集
    */

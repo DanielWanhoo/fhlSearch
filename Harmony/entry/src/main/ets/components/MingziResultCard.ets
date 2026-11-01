@@ -9,6 +9,8 @@ import { MingziItem } from '../model/MingziItem'
 @Component
 export struct MingziResultCard {
   @Prop item: MingziItem
+  /** 元素 id：详情弹窗会用它量出这张卡片的真实矩形，形变的起点就是卡片所在位置 */
+  @Prop morphId: string = ''
 
   build() {
     Row() {
@@ -22,11 +24,13 @@ export struct MingziResultCard {
         .fontColor($r('app.color.text_secondary'))
     }
     .width('100%')
-    .padding({ left: 16, right: 16, top: 14, bottom: 14 })
+    .padding({ left: 18, right: 18, top: 16, bottom: 16 })
     .backgroundColor($r('app.color.card_bg'))
-    .borderRadius(14)
+    .borderRadius(18)
     .border({ width: 1, color: $r('app.color.cell_border'), style: BorderStyle.Solid })
-    .shadow({ radius: 6, color: $r('app.color.card_shadow'), offsetX: 0, offsetY: 2 })
+    .shadow({ radius: 12, color: $r('app.color.card_shadow'), offsetX: 0, offsetY: 4 })
+    // 详情弹窗按这个 id 量到卡片的真实矩形，形变的起点就是卡片所在位置
+    .id(this.morphId)
     .accessibilityGroup(true)
     .accessibilityText(`${this.item.name}（${this.item.dynasty}）`)
   }

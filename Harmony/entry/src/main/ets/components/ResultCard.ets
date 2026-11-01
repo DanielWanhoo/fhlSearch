@@ -50,14 +50,14 @@ export struct ResultCard {
       .margin({ left: 12 })
     }
     .width('100%')
-    .padding(12)
-    .borderRadius(12)
+    .padding({ left: 14, top: 14, right: 14, bottom: 14 })
+    .borderRadius(18)
     .backgroundColor($r('app.color.card_bg'))
     .shadow({
-      radius: 8,
+      radius: 14,
       color: $r('app.color.card_shadow'),
       offsetX: 0,
-      offsetY: 2
+      offsetY: 4
     })
     .accessibilityGroup(true)
     .accessibilityText(`${this.result.poetry.line}，${this.result.poetry.author}，${this.result.poetry.title}`)
